@@ -16,6 +16,7 @@ import java.io.InputStreamReader;
 
 public class MainActivity extends AppCompatActivity {
     private static final int READ_REQUEST_CODE = 42;
+    private String gpxString;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,9 +45,10 @@ public class MainActivity extends AppCompatActivity {
                 //showImage(uri);
                 String str;
                 try {
-                    str=readTextFromUri(uri);
-                    EditText editText = (EditText) findViewById(R.id.editText);
-                    editText.setText(str);
+                    gpxString=readTextFromUri(uri);
+                    Log.i("Gpx",gpxString);
+                    //EditText editText = (EditText) findViewById(R.id.editText);
+                    //editText.setText(str);
                 }
                 catch (IOException e){
                     e.printStackTrace();
