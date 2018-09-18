@@ -26,13 +26,12 @@ public class MainActivity extends AppCompatActivity {
     private static final int READ_REQUEST_CODE = 42;
     private Gpx gpx;
     private String gpxString;
-    private TextView textView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        gpxString=Gpx.test();
+
     }
     public void openGpx(View view) {
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
@@ -73,6 +72,7 @@ public class MainActivity extends AppCompatActivity {
                 // User chose the "Settings" item, show the app settings UI...
                 //textView = (TextView) findViewById(R.id.textView);
                 //textView.setText("Action_Settings");
+                gpxString=Gpx.test();
                 return true;
             case R.id.action_favorite:
                 // User chose the "Favorite" action, mark the current item
