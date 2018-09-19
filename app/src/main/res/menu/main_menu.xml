@@ -3,15 +3,21 @@
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <!-- "Mark Favorite", should appear as action button if possible -->
     <item
-        android:id="@+id/action_favorite"
+        android:id="@+id/action_selectmap"
         android:icon="@drawable/ic_map_black_24dp"
-        android:title="action_favorite"
+        android:title="action_selectmap"
+        app:showAsAction="ifRoom"/>
+    <item
+        android:id="@+id/action_selectgpx"
+        android:icon="@drawable/ic_gesture_black_24dp"
+        android:title="action_selectgpx"
         app:showAsAction="ifRoom"/>
     <!-- Settings, should always be in the overflow -->
     <item android:id="@+id/action_settings"
-        android:title="action_settings"
+        android:icon="@drawable/ic_settings_black_24dp"
+        android:title="設定"
         app:showAsAction="never"/>
     <item android:id="@+id/action_testing"
-        android:title="action_testing"
+        android:title="測試"
         app:showAsAction="never"/>
 </menu>

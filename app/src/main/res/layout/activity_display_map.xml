@@ -4,11 +4,6 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:id="@+id/main"
-    tools:context=".MainActivity">
-    <org.mapsforge.map.android.view.MapView
-        android:id="@+id/map"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        ></org.mapsforge.map.android.view.MapView>
+    tools:context=".DisplayMapActivity">
+
 </android.support.constraint.ConstraintLayout>

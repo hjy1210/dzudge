@@ -3,27 +3,42 @@ package com.example.dzudge;
 import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Environment;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.View;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Map;
 
 import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.TextView;
 
+import org.mapsforge.core.model.LatLong;
+import org.mapsforge.map.android.graphics.AndroidGraphicFactory;
+import org.mapsforge.map.android.util.AndroidUtil;
+import org.mapsforge.map.android.view.MapView;
+import org.mapsforge.map.datastore.MapDataStore;
+import org.mapsforge.map.layer.cache.TileCache;
+import org.mapsforge.map.layer.renderer.TileRendererLayer;
+import org.mapsforge.map.rendertheme.InternalRenderTheme;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
+import org.mapsforge.map.reader.MapFile;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
 public class MainActivity extends AppCompatActivity {
-    private static final int READ_REQUEST_CODE = 42;
+    private static final int READ_REQUEST_GPX = 42;
+    private static final int READ_REQUEST_MAP = 43;
+    public static final String EXTRA_MAP = "com.example.dzudge.MAP";
+
     private Gpx gpx;
     private String gpxString;
 
@@ -37,12 +52,18 @@ public class MainActivity extends AppCompatActivity {
         Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
         intent.addCategory(Intent.CATEGORY_OPENABLE);
         intent.setType("*/*");
-        startActivityForResult(intent, READ_REQUEST_CODE);
+        startActivityForResult(intent, READ_REQUEST_GPX);
+    }
+    public void openMap(View view) {
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("*/*");
+        startActivityForResult(intent, READ_REQUEST_MAP);
     }
 
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent resultData) {
-        if (requestCode == READ_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
+        if (requestCode == READ_REQUEST_GPX && resultCode == Activity.RESULT_OK) {
             // The document selected by the user won't be returned in the intent.
             // Instead, a URI to that document will be contained in the return intent
             // provided to this method as a parameter.
@@ -59,7 +80,32 @@ public class MainActivity extends AppCompatActivity {
                     e.printStackTrace();
                 }
             }
+        } else if (requestCode == READ_REQUEST_MAP && resultCode == Activity.RESULT_OK) {
+            // The document selected by the user won't be returned in the intent.
+            // Instead, a URI to that document will be contained in the return intent
+            // provided to this method as a parameter.
+            // Pull that URI using resultData.getData().
+            Uri uri = null;
+            if (resultData != null) {
+                uri = resultData.getData();
+                try {
+                    //textView.setText(readGpx(uri));
+                    loadMap(uri);
+                }
+                catch (IOException e){
+                    e.printStackTrace();
+                }
+            }
         }
+    }
+    private void loadMap(Uri uri)throws IOException{
+        String filePath=uri.getPath();
+        filePath=filePath.substring(filePath.indexOf(":")+1); /////很古怪的繞路方式，應有更好的辦法
+        Intent intent=new Intent(this, DisplayMapActivity.class);
+        intent.putExtra(EXTRA_MAP, filePath);
+
+        startActivity(intent);
+
     }
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main_menu, menu);
@@ -67,6 +113,7 @@ public class MainActivity extends AppCompatActivity {
     }
     public boolean onOptionsItemSelected(MenuItem item) {
         TextView textView;
+        Intent intent;
         switch (item.getItemId()) {
             case R.id.action_settings:
                 // User chose the "Settings" item, show the app settings UI...
@@ -74,19 +121,24 @@ public class MainActivity extends AppCompatActivity {
                 //textView.setText("Action_Settings");
                 gpxString=Gpx.test();
                 return true;
-            case R.id.action_favorite:
+            case R.id.action_selectgpx:
                 // User chose the "Favorite" action, mark the current item
                 // as a favorite...
                 //textView = (TextView) findViewById(R.id.textView);
                 //textView.setText("楊宏章");
                 openGpx(null);
                 return true;
+            case R.id.action_selectmap:
+                //intent=new Intent(this, DisplayMapActivity.class);
+                //startActivity(intent);
+                openMap(null);
+                return true;
             case R.id.action_testing:
                 // User chose the "Favorite" action, mark the current item
                 // as a favorite...
                 //textView = (TextView) findViewById(R.id.textView);
                 //textView.setText("楊宏章");
-                Intent intent=new Intent(this,EditMessageActivity.class);
+                intent=new Intent(this,EditMessageActivity.class);
                 startActivity(intent);
                 return true;
             default:
@@ -119,5 +171,4 @@ public class MainActivity extends AppCompatActivity {
         }
         return null;
     }
-
 }
