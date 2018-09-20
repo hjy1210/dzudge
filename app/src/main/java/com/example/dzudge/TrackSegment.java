@@ -7,4 +7,13 @@ class TrackSegment{
     TrackSegment(ArrayList<TrackPoint> trackPoints){
         _trackPoints=trackPoints;
     }
+    @Override
+    public String toString(){
+        if (_trackPoints==null) {
+            return "";
+        } else {
+            return ""+_trackPoints.size();
+        }
+    }
+
 }

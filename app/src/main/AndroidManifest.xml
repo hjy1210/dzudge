@@ -32,7 +32,6 @@
                 android:value=".EditMessageActivity" />
         </activity>
         <activity android:name=".EditMessageActivity" />
-        <activity android:name=".DisplayMapActivity"></activity>
     </application>
 
 </manifest>

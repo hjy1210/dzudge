@@ -34,4 +34,8 @@ public class Gpx {
         }
         return "";
     }
+    @Override
+    public String toString(){
+        return "trkssize:"+_trks.size()+_trks.get(0)+", wptssize:"+_wpts.size();
+    }
 }

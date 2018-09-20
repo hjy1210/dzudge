@@ -11,4 +11,9 @@ class Track{
         _desc=desc;
         _trks=trks;
     }
+    @Override
+    public String toString(){
+        if (_trks!=null) return ":"+_trks.size()+":"+_trks.get(0);
+        else return "";
+    }
 }
