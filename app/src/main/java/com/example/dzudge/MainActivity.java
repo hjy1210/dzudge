@@ -20,6 +20,7 @@ import org.mapsforge.map.android.graphics.AndroidGraphicFactory;
 import org.mapsforge.map.android.util.AndroidUtil;
 import org.mapsforge.map.android.view.MapView;
 import org.mapsforge.map.datastore.MapDataStore;
+import org.mapsforge.map.layer.Layer;
 import org.mapsforge.map.layer.cache.TileCache;
 import org.mapsforge.map.layer.overlay.Marker;
 import org.mapsforge.map.layer.overlay.Polyline;
@@ -50,6 +51,7 @@ public class MainActivity extends AppCompatActivity {
     private String map;
     private byte zoomLevel;
     private TileCache tileCache;
+    private ArrayList<Layer> trackLayers;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -212,13 +214,16 @@ public class MainActivity extends AppCompatActivity {
     }
     private void addTrack(){
         if (gpx==null) return;
+        clearTrack();
+        trackLayers=new ArrayList<Layer>();
         ArrayList<WayPoint> wpts=gpx._wpts;
         for (int i=0;i<wpts.size();i++){
             WayPoint wpt=wpts.get(i);
             LatLong latLong=wpt._latLong;
             Marker marker1 = Utils.createTappableMarker(this,
                     R.drawable.marker_red, latLong);
-            mapView.getLayerManager().getLayers().add(marker1);
+            trackLayers.add(marker1);
+            //mapView.getLayerManager().getLayers().add(marker1);
         }
         ArrayList<Track> trks=gpx._trks;
         for (int i=0;i<trks.size();i++) {
@@ -234,10 +239,18 @@ public class MainActivity extends AppCompatActivity {
                     latLongs.add(trkSeg._trackPoints.get(k)._latLong);
                 }
                 polyline.setPoints(latLongs);
-                mapView.getLayerManager().getLayers().add(polyline);
+                trackLayers.add(polyline);
+                //mapView.getLayerManager().getLayers().add(polyline);
             }
         }
+        mapView.getLayerManager().getLayers().addAll(trackLayers);
+    }
 
+    private void clearTrack() {
+        if (trackLayers!=null) {
+            for (int i=0;i<trackLayers.size();i++)
+                mapView.getLayerManager().getLayers().remove(trackLayers.get(i));
+        }
     }
     /*private void loadMap(Uri uri) throws IOException {
         String filePath = uri.getPath();
