@@ -5,15 +5,15 @@ import java.util.ArrayList;
 class Track{
     String _name;
     String _desc;
-    ArrayList<TrackSegment> _trks;
-    Track(String name, String desc, ArrayList<TrackSegment> trks){
+    ArrayList<TrackSegment> _trksegs;
+    Track(String name, String desc, ArrayList<TrackSegment> trksegs){
         _name=name;
         _desc=desc;
-        _trks=trks;
+        _trksegs =trksegs;
     }
     @Override
     public String toString(){
-        if (_trks!=null) return ":"+_trks.size()+":"+_trks.get(0);
+        if (_trksegs !=null) return ":"+ _trksegs.size()+":"+ _trksegs.get(0);
         else return "";
     }
 }

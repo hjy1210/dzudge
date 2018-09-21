@@ -3,34 +3,37 @@ package com.example.dzudge;
 import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Bundle;
 import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.v7.app.AppCompatActivity;
-import android.os.Bundle;
-import android.view.View;
-
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-import java.util.Map;
-
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import org.mapsforge.core.graphics.Color;
+import org.mapsforge.core.graphics.Style;
 import org.mapsforge.core.model.LatLong;
 import org.mapsforge.map.android.graphics.AndroidGraphicFactory;
 import org.mapsforge.map.android.util.AndroidUtil;
 import org.mapsforge.map.android.view.MapView;
 import org.mapsforge.map.datastore.MapDataStore;
 import org.mapsforge.map.layer.cache.TileCache;
+import org.mapsforge.map.layer.overlay.Marker;
+import org.mapsforge.map.layer.overlay.Polyline;
 import org.mapsforge.map.layer.renderer.TileRendererLayer;
+import org.mapsforge.map.reader.MapFile;
 import org.mapsforge.map.rendertheme.InternalRenderTheme;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
-import org.mapsforge.map.reader.MapFile;
+
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
@@ -177,6 +180,7 @@ public class MainActivity extends AppCompatActivity {
                 try {
                     //textView.setText(readGpx(uri));
                     gpx = readGpx(uri);
+                    addTrack();
                     Toast.makeText(this,"gpx:"+gpx,Toast.LENGTH_LONG).show();
                     int z = 0;
                 } catch (IOException e) {
@@ -196,6 +200,7 @@ public class MainActivity extends AppCompatActivity {
                     //loadMap(uri);
                     String filePath = uri.getPath();
                     map = filePath.substring(filePath.indexOf(":") + 1); /////很古怪的繞路方式，應有更好的辦法
+
                     mapDataStore=getMapDataStore(map,tileCache);
                     setMapCenter(mapDataStore,zoomLevel);
 
@@ -205,7 +210,35 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     }
+    private void addTrack(){
+        if (gpx==null) return;
+        ArrayList<WayPoint> wpts=gpx._wpts;
+        for (int i=0;i<wpts.size();i++){
+            WayPoint wpt=wpts.get(i);
+            LatLong latLong=wpt._latLong;
+            Marker marker1 = Utils.createTappableMarker(this,
+                    R.drawable.marker_red, latLong);
+            mapView.getLayerManager().getLayers().add(marker1);
+        }
+        ArrayList<Track> trks=gpx._trks;
+        for (int i=0;i<trks.size();i++) {
+            Track trk=trks.get(i);
+            for (int j = 0; j<trk._trksegs.size(); j++){
+                TrackSegment trkSeg=trk._trksegs.get(j);
+                Polyline polyline = new Polyline(Utils.createPaint(
+                        AndroidGraphicFactory.INSTANCE.createColor(Color.BLUE),
+                        (int) (2 * mapView.getModel().displayModel.getScaleFactor()),
+                        Style.STROKE), AndroidGraphicFactory.INSTANCE);
+                List<LatLong> latLongs = new ArrayList<>();
+                for (int k=0;k<trkSeg._trackPoints.size();k++){
+                    latLongs.add(trkSeg._trackPoints.get(k)._latLong);
+                }
+                polyline.setPoints(latLongs);
+                mapView.getLayerManager().getLayers().add(polyline);
+            }
+        }
 
+    }
     /*private void loadMap(Uri uri) throws IOException {
         String filePath = uri.getPath();
         filePath = filePath.substring(filePath.indexOf(":") + 1); /////很古怪的繞路方式，應有更好的辦法
