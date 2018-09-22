@@ -42,13 +42,13 @@ import javax.xml.parsers.ParserConfigurationException;
 
 public class MainActivity extends AppCompatActivity {
     private static final int READ_REQUEST_GPX = 42;
-    private static final int READ_REQUEST_MAP = 43;
-    public static final String EXTRA_MAP = "com.example.dzudge.MAP";
+
     private MapDataStore mapDataStore;
     private Gpx gpx;
     private String gpxString;
     private MapView mapView;
     private String map;
+    private File mapFile;
     private byte zoomLevel;
     private TileCache tileCache;
     private ArrayList<Layer> trackLayers;
@@ -57,6 +57,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         //setContentView(R.layout.activity_main);
         map = "GTs/map/taiwan_ML.map";
+        mapFile=new File(Environment.getExternalStorageDirectory(),map);
         zoomLevel = 13;
         //mapView=(MapView) findViewById(R.id.map);
         /*
@@ -79,7 +80,7 @@ public class MainActivity extends AppCompatActivity {
          */
         mapView = new MapView(this);
         setContentView(mapView);
-        //setContentView(R.layout.activity_main);
+
         try {
             /*
              * We then make some simple adjustments, such as showing a scale bar and zoom controls.
@@ -95,7 +96,8 @@ public class MainActivity extends AppCompatActivity {
             tileCache = AndroidUtil.createTileCache(this, "mapcache",
                     mapView.getModel().displayModel.getTileSize(), 1f,
                     mapView.getModel().frameBufferModel.getOverdrawFactor());
-            mapDataStore = getMapDataStore(map, tileCache);
+            //mapDataStore = getMapDataStore(map, tileCache);
+            setMapDataStore(mapFile);
             setMapCenter(mapDataStore, (byte) 13);
         } catch (Exception e) {
             /*
@@ -119,31 +121,6 @@ public class MainActivity extends AppCompatActivity {
         mapView.setZoomLevel(zoomLevel);
     }
 
-    @NonNull
-    private MapDataStore getMapDataStore(String map, TileCache tileCache) {
-        /*
-         * Now we need to set up the process of displaying a map. A map can have several layers,
-         * stacked on top of each other. A layer can be a map or some visual elements, such as
-         * markers. Here we only show a map based on a mapsforge map file. For this we need a
-         * TileRendererLayer. A TileRendererLayer needs a TileCache to hold the generated map
-         * tiles, a map file from which the tiles are generated and Rendertheme that defines the
-         * appearance of the map.
-         */
-        File mapFile = new File(Environment.getExternalStorageDirectory(), map);
-        MapDataStore mapDataStore = new MapFile(mapFile);
-        TileRendererLayer tileRendererLayer = new TileRendererLayer(tileCache, mapDataStore,
-                mapView.getModel().mapViewPosition, AndroidGraphicFactory.INSTANCE);
-        tileRendererLayer.setXmlRenderTheme(InternalRenderTheme.DEFAULT);
-
-        /*
-         * On its own a tileRendererLayer does not know where to display the map, so we need to
-         * associate it with our mapView.
-         */
-        mapView.getLayerManager().getLayers().clear();
-        mapView.getLayerManager().getLayers().add(tileRendererLayer);
-        return mapDataStore;
-    }
-
     @Override
     protected void onDestroy() {
         /*
@@ -162,11 +139,31 @@ public class MainActivity extends AppCompatActivity {
         startActivityForResult(intent, READ_REQUEST_GPX);
     }
 
-    public void openMap(View view) {
-        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-        intent.addCategory(Intent.CATEGORY_OPENABLE);
-        intent.setType("*/*");
-        startActivityForResult(intent, READ_REQUEST_MAP);
+    public void openMap(View view){
+        final FileChooser dialog=new FileChooser(this);
+        dialog.setFileListener(new FileChooser.FileSelectedListener() {
+            @Override
+            public void fileSelected(final File file) {
+                setMapDataStore(file);
+            }
+        });
+        dialog.setExtension(".map");
+        dialog.showDialog();
+    }
+
+    private void setMapDataStore(File file) {
+        mapDataStore = new MapFile(file);
+        TileRendererLayer tileRendererLayer = new TileRendererLayer(tileCache, mapDataStore,
+                mapView.getModel().mapViewPosition, AndroidGraphicFactory.INSTANCE);
+        tileRendererLayer.setXmlRenderTheme(InternalRenderTheme.DEFAULT);
+
+        /*
+         * On its own a tileRendererLayer does not know where to display the map, so we need to
+         * associate it with our mapView.
+         */
+        mapView.getLayerManager().getLayers().clear();
+        mapView.getLayerManager().getLayers().add(tileRendererLayer);
+        setMapCenter(mapDataStore,zoomLevel);
     }
 
     @Override
@@ -188,27 +185,6 @@ public class MainActivity extends AppCompatActivity {
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-            }
-        } else if (requestCode == READ_REQUEST_MAP && resultCode == Activity.RESULT_OK) {
-            // The document selected by the user won't be returned in the intent.
-            // Instead, a URI to that document will be contained in the return intent
-            // provided to this method as a parameter.
-            // Pull that URI using resultData.getData().
-            Uri uri = null;
-            if (resultData != null) {
-                uri = resultData.getData();
-                //try {
-                    //textView.setText(readGpx(uri));
-                    //loadMap(uri);
-                    String filePath = uri.getPath();
-                    map = filePath.substring(filePath.indexOf(":") + 1); /////很古怪的繞路方式，應有更好的辦法
-
-                    mapDataStore=getMapDataStore(map,tileCache);
-                    setMapCenter(mapDataStore,zoomLevel);
-
-                //} catch (IOException e) {
-                //    e.printStackTrace();
-                //}
             }
         }
     }
@@ -252,15 +228,6 @@ public class MainActivity extends AppCompatActivity {
                 mapView.getLayerManager().getLayers().remove(trackLayers.get(i));
         }
     }
-    /*private void loadMap(Uri uri) throws IOException {
-        String filePath = uri.getPath();
-        filePath = filePath.substring(filePath.indexOf(":") + 1); /////很古怪的繞路方式，應有更好的辦法
-        Intent intent = new Intent(this, DisplayMapActivity.class);
-        intent.putExtra(EXTRA_MAP, filePath);
-
-        startActivity(intent);
-
-    }*/
 
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main_menu, menu);
