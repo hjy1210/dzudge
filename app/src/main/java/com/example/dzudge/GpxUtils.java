@@ -32,6 +32,7 @@ public class GpxUtils {
     }
     private static double getElevation(Element waypointEle){
         NodeList nList=waypointEle.getElementsByTagName("ele");
+        if (nList.getLength()==0) return 0;  ///// some <wpt> node has no <ele> child
         return Double.parseDouble(nList.item(0).getTextContent());
     }
     private static Date getTime(Element waypointEle){
