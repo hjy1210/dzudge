@@ -13,6 +13,8 @@ import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.obsez.android.lib.filechooser.ChooserDialog;
+
 import org.mapsforge.core.graphics.Color;
 import org.mapsforge.core.graphics.Style;
 import org.mapsforge.core.model.LatLong;
@@ -139,7 +141,7 @@ public class MainActivity extends AppCompatActivity {
         startActivityForResult(intent, READ_REQUEST_GPX);
     }
 
-    public void openMap(View view){
+    public void openMap0(View view){
         final FileChooser dialog=new FileChooser(this);
         dialog.setFileListener(new FileChooser.FileSelectedListener() {
             @Override
@@ -150,6 +152,21 @@ public class MainActivity extends AppCompatActivity {
         dialog.setExtension(".map");
         dialog.showDialog();
     }
+    public void openMap(View view){
+        ///// https://github.com/hedzr/android-file-chooser
+        new ChooserDialog().with(this)
+                .withFilter(false, false, "map")
+                .withStartFile(Environment.getExternalStorageDirectory().toString())
+                .withChosenListener(new ChooserDialog.Result() {
+                    @Override
+                    public void onChoosePath(String path, File pathFile) {
+                        //Toast.makeText(MainActivity.this, "FILE: " + path, Toast.LENGTH_SHORT).show();
+                        setMapDataStore(pathFile);
+                    }
+                })
+                .build()
+                .show();
+     }
 
     private void setMapDataStore(File file) {
         mapDataStore = new MapFile(file);

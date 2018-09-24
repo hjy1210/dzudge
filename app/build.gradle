@@ -32,4 +32,5 @@ dependencies {
     implementation 'org.mapsforge:mapsforge-poi-android:0.10.0'
     implementation 'org.mapsforge:mapsforge-map-reader:0.10.0'
     implementation 'org.mapsforge:mapsforge-map-android:0.10.0'
+    implementation 'com.obsez.android.lib.filechooser:filechooser:1.1.2'
 }
