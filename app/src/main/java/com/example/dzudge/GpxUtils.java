@@ -35,7 +35,9 @@ public class GpxUtils {
         return Double.parseDouble(nList.item(0).getTextContent());
     }
     private static Date getTime(Element waypointEle){
-        String time=waypointEle.getElementsByTagName("time").item(0).getTextContent();
+        NodeList nList=waypointEle.getElementsByTagName("time");
+        if (nList.getLength()==0) return null;  ///// some <wpt> element has not time child
+        String time=nList.item(0).getTextContent();
         Date date;
         try{
             date=dateFormatter.parse(time);
