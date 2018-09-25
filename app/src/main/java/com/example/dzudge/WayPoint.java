@@ -16,6 +16,6 @@ class WayPoint extends TrackPoint {
     }
     @Override
     public String toString(){
-        return super.toString()+",name:"+_name+",desc:"+_desc+",sym:"+_sym;
+        return super.toString()+"\nname:"+_name+"\ndesc:"+_desc+"\nsym:"+_sym;
     }
 }

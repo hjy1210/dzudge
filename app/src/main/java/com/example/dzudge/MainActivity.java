@@ -242,8 +242,8 @@ public class MainActivity extends AppCompatActivity {
         for (int i=0;i<wpts.size();i++){
             WayPoint wpt=wpts.get(i);
             LatLong latLong=wpt._latLong;
-            Marker marker1 = Utils.createTappableMarker(this,
-                    R.drawable.marker_red, latLong);
+            MarkerX marker1 = Utils.createTappableMarkerX(this,
+                    R.drawable.marker_red, wpts.get(i));
             trackLayers.add(marker1);
             //mapView.getLayerManager().getLayers().add(marker1);
         }

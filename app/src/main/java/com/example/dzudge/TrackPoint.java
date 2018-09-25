@@ -15,7 +15,8 @@ import java.util.Date;
         }
         @Override
         public String toString(){
-            return _latLong.toString()+",ele:"+_ele+",time:"+_time;
+            return "緯度:"+_latLong.latitude+"\n經度:"+_latLong.longitude+"\n"+
+                    "標高:"+_ele+"\n時刻:"+_time;
         }
 
     }

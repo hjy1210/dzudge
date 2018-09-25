@@ -106,6 +106,25 @@ public final class Utils {
         };
     }
 
+    static MarkerX createTappableMarkerX(final Context c, int resourceIdentifier,
+                                       WayPoint wpt) {
+        Drawable drawable = Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP ? c.getDrawable(resourceIdentifier) : c.getResources().getDrawable(resourceIdentifier);
+        Bitmap bitmap = AndroidGraphicFactory.convertToBitmap(drawable);
+        bitmap.incrementRefCount();
+        return new MarkerX(wpt._latLong, bitmap, 0, -bitmap.getHeight() / 2,wpt.toString()) {
+            @Override
+            public boolean onTap(LatLong geoPoint, Point viewPosition,
+                                 Point tapPoint) {
+                if (contains(viewPosition, tapPoint)) {
+                    Toast.makeText(c,
+                            _msg,
+                            Toast.LENGTH_SHORT).show();
+                    return true;
+                }
+                return false;
+            }
+        };
+    }
     public static Bitmap viewToBitmap(Context c, View view) {
         view.measure(MeasureSpec.getSize(view.getMeasuredWidth()),
                 MeasureSpec.getSize(view.getMeasuredHeight()));
