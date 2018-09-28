@@ -69,23 +69,19 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     private boolean isRecording;
     private LocationManager locationManager;
     private String provider;
-
+    private boolean inspectLifeCycle;
+    Menu menu;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        // Define the criteria how to select the locatioin provider -> use
-        // default
         Criteria criteria = new Criteria();
         provider = locationManager.getBestProvider(criteria, false);
 
-        //setContentView(R.layout.activity_main);
-        //map = "GTs/map/taiwan_ML.map";
-        //mapFile = new File(Environment.getExternalStorageDirectory(), map);
         zoomLevel = 10;
-        //mapView=(MapView) findViewById(R.id.map);
-        /*
+         /*
          * Before you make any calls on the mapsforge library, you need to initialize the
          * AndroidGraphicFactory. Behind the scenes, this initialization process gathers a bit of
          * information on your device, such as the screen resolution, that allows mapsforge to
@@ -95,7 +91,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
          * specific activity. But it can also be created in the onCreate() method in your activity.
          */
         AndroidGraphicFactory.createInstance(getApplication());
-
         /*
          * A MapView is an Android View (or ViewGroup) that displays a mapsforge map. You can have
          * multiple MapViews in your app or even a single Activity. Have a look at the mapviewer.xml
@@ -103,10 +98,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
          * MapView on the fly and make the content view of the activity the MapView. This means
          * that no other elements make up the content of this activity.
          */
-        mapView=(MapView)findViewById(R.id.map);
         //mapView = new MapView(this);
-        //setContentView(mapView);
-
+        mapView=(MapView)findViewById(R.id.map);
         try {
             /*
              * We then make some simple adjustments, such as showing a scale bar and zoom controls.
@@ -114,7 +107,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             mapView.setClickable(true);
             mapView.getMapScaleBar().setVisible(true);
             mapView.setBuiltInZoomControls(true);
-
             /*
              * To avoid redrawing all the tiles all the time, we need to set up a tile cache with an
              * utility method.
@@ -131,37 +123,23 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
              */
             e.printStackTrace();
         }
-        Toast.makeText(this, "onCreate", Toast.LENGTH_LONG).show();
+        if (inspectLifeCycle) Toast.makeText(this, "onCreate", Toast.LENGTH_LONG).show();
 
-    }
-    public void onClickLeftShade(View view){
-        //Toast.makeText(this,"You tap me",Toast.LENGTH_SHORT);
-        view.setVisibility(View.INVISIBLE);
-        View btn=(Button) findViewById(R.id.left_data);
-        btn.setVisibility(View.VISIBLE);
-    }
-    public void onClickLeftData(View view){
-        //Toast.makeText(this,"You tap me",Toast.LENGTH_SHORT);
-        view.setVisibility(View.INVISIBLE);
-        View btn=(Button) findViewById(R.id.left_shade);
-        btn.setVisibility(View.VISIBLE);
     }
     @Override
     protected void onStart() {
         super.onStart();
-        Toast.makeText(this, "onStart", Toast.LENGTH_LONG).show();
+        if (inspectLifeCycle) Toast.makeText(this, "onStart", Toast.LENGTH_LONG).show();
     }
-
     @Override
     protected void onRestart() {
         super.onRestart();
-        Toast.makeText(this, "onRestart", Toast.LENGTH_LONG).show();
+        if (inspectLifeCycle) Toast.makeText(this, "onRestart", Toast.LENGTH_LONG).show();
     }
-
     @Override
     protected void onResume() {
         super.onResume();
-        Toast.makeText(this, "onResume", Toast.LENGTH_LONG).show();
+        if (inspectLifeCycle) Toast.makeText(this, "onResume", Toast.LENGTH_LONG).show();
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
                 ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
@@ -176,60 +154,17 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         if (mapDataStore!=null && isRecording)
             locationManager.requestLocationUpdates(provider, 300, 5, this);
     }
-
     @Override
     protected void onPause() {
         super.onPause();
-        Toast.makeText(this, "onPause", Toast.LENGTH_LONG).show();
+        if (inspectLifeCycle) Toast.makeText(this, "onPause", Toast.LENGTH_LONG).show();
         locationManager.removeUpdates(this);
     }
-
     @Override
     protected void onStop() {
         super.onStop();
-        Toast.makeText(this, "onStop", Toast.LENGTH_LONG).show();
+        if (inspectLifeCycle) Toast.makeText(this, "onStop", Toast.LENGTH_LONG).show();
     }
-
-    private void setMapCenter() {
-        /*
-         * The map also needs to know which area to display and at what zoom level.
-         * Note: this map position is specific to Berlin area.
-         */
-        //mapView.setCenter(new LatLong(52.517037, 13.38886));
-        if (mapDataStore==null) return;
-        double maxLat = mapDataStore.boundingBox().maxLatitude;
-        double minLat = mapDataStore.boundingBox().minLatitude;
-        double maxLong = mapDataStore.boundingBox().maxLongitude;
-        double minLong = mapDataStore.boundingBox().minLongitude;
-        LatLong center = new LatLong((maxLat + minLat) / 2, (maxLong + minLong) / 2);
-        mapView.setCenter(new LatLong((maxLat + minLat) / 2, (maxLong + minLong) / 2));
-        mapView.setZoomLevel(zoomLevel);
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED && ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            return;
-        }
-        //locationManager.requestLocationUpdates(provider, 300, 5, this);
-        /*Circle circle = new Circle(center, 50, Utils.createPaint(
-                AndroidGraphicFactory.INSTANCE.createColor(Color.BLUE), 0,
-                Style.FILL), null);
-        lastPos=circle;
-        mapView.getLayerManager().getLayers().add(circle);
-        Toast.makeText(this,"wait",Toast.LENGTH_SHORT).show();
-        mapView.getLayerManager().getLayers().remove(lastPos);
-        center=new LatLong((maxLat + minLat) / 2+0.01, (maxLong + minLong) / 2+0.01);
-        circle = new Circle(center, 50, Utils.createPaint(
-                AndroidGraphicFactory.INSTANCE.createColor(Color.BLUE), 0,
-                Style.FILL), null);
-        mapView.getLayerManager().getLayers().add(circle);*/
-
-    }
-
     @Override
     protected void onDestroy() {
         /*
@@ -239,63 +174,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         mapView.destroyAll();
         AndroidGraphicFactory.clearResourceMemoryCache();
         Toast.makeText(this,"onDestroy",Toast.LENGTH_LONG).show();
-        super.onDestroy();
+        if (inspectLifeCycle) super.onDestroy();
     }
-
-    public void openGpx(View view) {
-        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
-        intent.addCategory(Intent.CATEGORY_OPENABLE);
-        intent.setType("*/*");
-        startActivityForResult(intent, READ_REQUEST_GPX);
-    }
-
-    public void openMap0(View view){
-        final FileChooser dialog=new FileChooser(this);
-        dialog.setFileListener(new FileChooser.FileSelectedListener() {
-            @Override
-            public void fileSelected(final File file) {
-                setMapDataStore(file);
-            }
-        });
-        dialog.setExtension(".map");
-        dialog.showDialog();
-    }
-    public void openMap(View view){
-        ///// https://github.com/hedzr/android-file-chooser
-        new ChooserDialog().with(this)
-                .withFilter(false, false, "map")
-                .withStartFile(Environment.getExternalStorageDirectory().toString())
-                .withChosenListener(new ChooserDialog.Result() {
-                    @Override
-                    public void onChoosePath(String path, File pathFile) {
-                        //Toast.makeText(MainActivity.this, "FILE: " + path, Toast.LENGTH_SHORT).show();
-                        setMapDataStore(pathFile);
-                    }
-                })
-                .build()
-                .show();
-     }
-
-    private void setMapDataStore(File file) {
-        if (file==null) return;
-        locationManager.removeUpdates(this);
-        mapDataStore = new MapFile(file);
-        TileRendererLayer tileRendererLayer = new TileRendererLayer(tileCache, mapDataStore,
-                mapView.getModel().mapViewPosition, AndroidGraphicFactory.INSTANCE);
-        tileRendererLayer.setXmlRenderTheme(InternalRenderTheme.DEFAULT);
-
-        /*
-         * On its own a tileRendererLayer does not know where to display the map, so we need to
-         * associate it with our mapView.
-         */
-        mapView.setZoomLevel(zoomLevel);
-        mapView.getLayerManager().getLayers().clear();
-        mapView.getLayerManager().getLayers().add(tileRendererLayer);
-        //setMapCenter(mapDataStore,zoomLevel);
-        //locationManager.removeUpdates(this);
-
-    }
-
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent resultData) {
         if (requestCode == READ_REQUEST_GPX && resultCode == Activity.RESULT_OK) {
@@ -307,63 +187,21 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             if (resultData != null) {
                 uri = resultData.getData();
                 try {
-                    //textView.setText(readGpx(uri));
                     gpx = readGpx(uri);
                     addTrack();
                     Toast.makeText(this,"gpx:"+gpx,Toast.LENGTH_LONG).show();
-                    int z = 0;
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
             }
         }
     }
-    private void addTrack(){
-        if (gpx==null) return;
-        clearTrack();
-        trackLayers=new ArrayList<Layer>();
-        ArrayList<WayPoint> wpts=gpx._wpts;
-        for (int i=0;i<wpts.size();i++){
-            WayPoint wpt=wpts.get(i);
-            LatLong latLong=wpt._latLong;
-            MarkerX marker1 = Utils.createTappableMarkerX(this,
-                    R.drawable.marker_red, wpts.get(i));
-            trackLayers.add(marker1);
-            //mapView.getLayerManager().getLayers().add(marker1);
-        }
-        ArrayList<Track> trks=gpx._trks;
-        for (int i=0;i<trks.size();i++) {
-            Track trk=trks.get(i);
-            for (int j = 0; j<trk._trksegs.size(); j++){
-                TrackSegment trkSeg=trk._trksegs.get(j);
-                Polyline polyline = new Polyline(Utils.createPaint(
-                        AndroidGraphicFactory.INSTANCE.createColor(Color.BLUE),
-                        (int) (2 * mapView.getModel().displayModel.getScaleFactor()),
-                        Style.STROKE), AndroidGraphicFactory.INSTANCE);
-                List<LatLong> latLongs = new ArrayList<>();
-                for (int k=0;k<trkSeg._trackPoints.size();k++){
-                    latLongs.add(trkSeg._trackPoints.get(k)._latLong);
-                }
-                polyline.setPoints(latLongs);
-                trackLayers.add(polyline);
-                //mapView.getLayerManager().getLayers().add(polyline);
-            }
-        }
-        mapView.getLayerManager().getLayers().addAll(trackLayers);
-    }
-
-    private void clearTrack() {
-        if (trackLayers!=null) {
-            for (int i=0;i<trackLayers.size();i++)
-                mapView.getLayerManager().getLayers().remove(trackLayers.get(i));
-        }
-    }
 
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.main_menu, menu);
+        this.menu=menu;
         return true;
     }
-
     public boolean onOptionsItemSelected(MenuItem item) {
         TextView textView;
         Intent intent;
@@ -394,43 +232,127 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     //                                          int[] grantResults)
                     // to handle the case where the user grants the permission. See the documentation
                     // for ActivityCompat#requestPermissions for more details.
-
                 }
-                isRecording=true;
-                locationManager.requestLocationUpdates(provider, 300, 5, this);
-                return true;
-            case R.id.action_stop:
-                isRecording=false;
-                locationManager.removeUpdates(this);
-                return true;
+                isRecording=!isRecording;
+                //menu.findItem(R.id.action_stop).setEnabled(true);
+                //menu.findItem(R.id.action_record).setEnabled(false);
+                MenuItem it=menu.findItem(R.id.action_record);
+                if (isRecording) {
+                    it.setTitle("停止記錄");
+                    locationManager.requestLocationUpdates(provider, 300, 5, this);
+                }
+                else {
+                    it.setTitle("記錄軌跡");
+                    locationManager.removeUpdates(this);
+                }
+               return true;
             case R.id.action_testing:
-                // User chose the "Favorite" action, mark the current item
-                // as a favorite...
-                //textView = (TextView) findViewById(R.id.textView);
-                //textView.setText("楊宏章");
                 intent = new Intent(this, EditMessageActivity.class);
                 startActivity(intent);
                 return true;
             default:
-                // If we got here, the user's action was not recognized.
-                // Invoke the superclass to handle it.
                 return super.onOptionsItemSelected(item);
         }
     }
 
+    //LocationListener has public methods:onLocationChanged, onStatusChanged, onProviderEnabled,onProviderDisabled
+    @Override
+    public void onLocationChanged(Location location) {
+        double lat = (location.getLatitude());
+        double lng = (location.getLongitude());
+        LatLong center=new LatLong(lat,lng);
+        if (lastPos!=null){
+            mapView.getLayerManager().getLayers().remove(lastPos);
+        }
+        lastPos = Utils.createMarker(this,
+                R.drawable.marker_green,center);
+        mapView.getLayerManager().getLayers().add(lastPos);
+        mapView.setCenter(center);
+    }
+    @Override
+    public void onStatusChanged(String provider, int status, Bundle extras) {
+        // TODO Auto-generated method stub
+    }
+    @Override
+    public void onProviderEnabled(String provider) {
+        Toast.makeText(this, "Enabled new provider " + provider,
+                Toast.LENGTH_SHORT).show();
+    }
+    @Override
+    public void onProviderDisabled(String provider) {
+        Toast.makeText(this, "Disabled provider " + provider,
+                Toast.LENGTH_SHORT).show();
+    }
+
+    // onClickLeftShade, onClickLeftData prepare to use overlay options
+    public void onClickLeftShade(View view){
+        //Toast.makeText(this,"You tap me",Toast.LENGTH_SHORT);
+        view.setVisibility(View.INVISIBLE);
+        View btn=(Button) findViewById(R.id.left_data);
+        btn.setVisibility(View.VISIBLE);
+    }
+    public void onClickLeftData(View view){
+        //Toast.makeText(this,"You tap me",Toast.LENGTH_SHORT);
+        view.setVisibility(View.INVISIBLE);
+        View btn=(Button) findViewById(R.id.left_shade);
+        btn.setVisibility(View.VISIBLE);
+    }
+
+    public void openMap(View view){
+        ///// https://github.com/hedzr/android-file-chooser
+        new ChooserDialog().with(this)
+                .withFilter(false, false, "map")
+                .withStartFile(Environment.getExternalStorageDirectory().toString())
+                .withChosenListener(new ChooserDialog.Result() {
+                    @Override
+                    public void onChoosePath(String path, File pathFile) {
+                        //Toast.makeText(MainActivity.this, "FILE: " + path, Toast.LENGTH_SHORT).show();
+                        setMapDataStore(pathFile);
+                    }
+                })
+                .build()
+                .show();
+    }
+    private void setMapDataStore(File file) {
+        if (file==null) return;
+        locationManager.removeUpdates(this);
+        mapDataStore = new MapFile(file);
+        TileRendererLayer tileRendererLayer = new TileRendererLayer(tileCache, mapDataStore,
+                mapView.getModel().mapViewPosition, AndroidGraphicFactory.INSTANCE);
+        tileRendererLayer.setXmlRenderTheme(InternalRenderTheme.DEFAULT);
+        /*
+         * On its own a tileRendererLayer does not know where to display the map, so we need to
+         * associate it with our mapView.
+         */
+        mapView.setZoomLevel(zoomLevel);
+        mapView.getLayerManager().getLayers().clear();
+        mapView.getLayerManager().getLayers().add(tileRendererLayer);
+    }
+    private void setMapCenter() {
+        if (mapDataStore==null) return;
+        double maxLat = mapDataStore.boundingBox().maxLatitude;
+        double minLat = mapDataStore.boundingBox().minLatitude;
+        double maxLong = mapDataStore.boundingBox().maxLongitude;
+        double minLong = mapDataStore.boundingBox().minLongitude;
+        LatLong center = new LatLong((maxLat + minLat) / 2, (maxLong + minLong) / 2);
+        mapView.setCenter(new LatLong((maxLat + minLat) / 2, (maxLong + minLong) / 2));
+        mapView.setZoomLevel(zoomLevel);
+    }
+
+    public void openGpx(View view) {
+        Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
+        intent.addCategory(Intent.CATEGORY_OPENABLE);
+        intent.setType("*/*");
+        startActivityForResult(intent, READ_REQUEST_GPX);
+    }
     private Gpx readGpx(Uri uri) throws IOException {
         InputStream inputStream = getContentResolver().openInputStream(uri);
         DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
-        //StringBuilder sb=new StringBuilder();
         try {
             DocumentBuilder docBuilder = builderFactory.newDocumentBuilder();
             Document doc = docBuilder.parse(inputStream);
             ArrayList<WayPoint> wpts = GpxUtils.getWayPoints(doc);
             ArrayList<Track> trks = GpxUtils.getTracks(doc);
-            //sb.append("size="+wpts.size()+"\n\n");
-            //for (int i=0;i<wpts.size();i++){
-            //    sb.append(wpts.get(i)+"\n");
-            //}
             return new Gpx(wpts, trks);
         } catch (ParserConfigurationException e) {
             e.printStackTrace();
@@ -441,40 +363,41 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         }
         return null;
     }
-
-    @Override
-    public void onLocationChanged(Location location) {
-        double lat = (location.getLatitude());
-        double lng = (location.getLongitude());
-        LatLong center=new LatLong(lat,lng);
-        if (lastPos!=null){
-            mapView.getLayerManager().getLayers().remove(lastPos);
+    private void addTrack(){
+        if (gpx==null) return;
+        clearTrack();
+        trackLayers=new ArrayList<Layer>();
+        ArrayList<WayPoint> wpts=gpx._wpts;
+        for (int i=0;i<wpts.size();i++){
+            WayPoint wpt=wpts.get(i);
+            LatLong latLong=wpt._latLong;
+            MarkerX marker1 = Utils.createTappableMarkerX(this,
+                    R.drawable.marker_red, wpts.get(i));
+            trackLayers.add(marker1);
         }
-        //lastPos = new Circle(center, 5, Utils.createPaint(
-        //            AndroidGraphicFactory.INSTANCE.createColor(Color.BLUE), 0,
-        //            Style.FILL), null);
-        lastPos = Utils.createMarker(this,
-                R.drawable.marker_green,center);
-        mapView.getLayerManager().getLayers().add(lastPos);
-        mapView.setCenter(center);
+        ArrayList<Track> trks=gpx._trks;
+        for (int i=0;i<trks.size();i++) {
+            Track trk=trks.get(i);
+            for (int j = 0; j<trk._trksegs.size(); j++){
+                TrackSegment trkSeg=trk._trksegs.get(j);
+                Polyline polyline = new Polyline(Utils.createPaint(
+                        AndroidGraphicFactory.INSTANCE.createColor(Color.BLUE),
+                        (int) (2 * mapView.getModel().displayModel.getScaleFactor()),
+                        Style.STROKE), AndroidGraphicFactory.INSTANCE);
+                List<LatLong> latLongs = new ArrayList<>();
+                for (int k=0;k<trkSeg._trackPoints.size();k++){
+                    latLongs.add(trkSeg._trackPoints.get(k)._latLong);
+                }
+                polyline.setPoints(latLongs);
+                trackLayers.add(polyline);
+            }
+        }
+        mapView.getLayerManager().getLayers().addAll(trackLayers);
     }
-
-    @Override
-    public void onStatusChanged(String provider, int status, Bundle extras) {
-        // TODO Auto-generated method stub
-
-    }
-
-    @Override
-    public void onProviderEnabled(String provider) {
-        Toast.makeText(this, "Enabled new provider " + provider,
-                Toast.LENGTH_SHORT).show();
-
-    }
-
-    @Override
-    public void onProviderDisabled(String provider) {
-        Toast.makeText(this, "Disabled provider " + provider,
-                Toast.LENGTH_SHORT).show();
+    private void clearTrack() {
+        if (trackLayers!=null) {
+            for (int i=0;i<trackLayers.size();i++)
+                mapView.getLayerManager().getLayers().remove(trackLayers.get(i));
+        }
     }
 }

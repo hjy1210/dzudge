@@ -27,9 +27,7 @@
         <menu>
             <item android:id="@+id/action_record"
                 android:icon="@drawable/ic_track"
-                android:title="開始記錄"/>
-            <item android:id="@+id/action_stop"
-                android:title="停止紀錄"/>
+                android:title="記錄軌跡"/>
         </menu>
 
     </item >
