@@ -66,7 +66,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     private TileCache tileCache;
     private ArrayList<Layer> trackLayers;
     private Layer lastPos;
-
+    private boolean isRecording;
     private LocationManager locationManager;
     private String provider;
 
@@ -79,23 +79,11 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         // default
         Criteria criteria = new Criteria();
         provider = locationManager.getBestProvider(criteria, false);
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
-                ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
-            //    ActivityCompat#requestPermissions
-            // here to request the missing permissions, and then overriding
-            //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-            //                                          int[] grantResults)
-            // to handle the case where the user grants the permission. See the documentation
-            // for ActivityCompat#requestPermissions for more details.
-            return;
-        }
-        //Location location = locationManager.getLastKnownLocation(provider);
 
         //setContentView(R.layout.activity_main);
-        map = "GTs/map/taiwan_ML.map";
-        mapFile = new File(Environment.getExternalStorageDirectory(), map);
-        zoomLevel = 13;
+        //map = "GTs/map/taiwan_ML.map";
+        //mapFile = new File(Environment.getExternalStorageDirectory(), map);
+        zoomLevel = 10;
         //mapView=(MapView) findViewById(R.id.map);
         /*
          * Before you make any calls on the mapsforge library, you need to initialize the
@@ -136,7 +124,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     mapView.getModel().frameBufferModel.getOverdrawFactor());
             //mapDataStore = getMapDataStore(map, tileCache);
             setMapDataStore(mapFile);
-            setMapCenter(mapDataStore, (byte) 13);
+            //setMapCenter(mapDataStore, (byte) 13);
         } catch (Exception e) {
             /*
              * In case of map file errors avoid crash, but developers should handle these cases!
@@ -183,9 +171,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             //                                          int[] grantResults)
             // to handle the case where the user grants the permission. See the documentation
             // for ActivityCompat#requestPermissions for more details.
-            return;
+            //return;
         }
-        if (mapDataStore!=null)
+        if (mapDataStore!=null && isRecording)
             locationManager.requestLocationUpdates(provider, 300, 5, this);
     }
 
@@ -202,12 +190,13 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         Toast.makeText(this, "onStop", Toast.LENGTH_LONG).show();
     }
 
-    private void setMapCenter(MapDataStore mapDataStore, byte zoomLevel) {
+    private void setMapCenter() {
         /*
          * The map also needs to know which area to display and at what zoom level.
          * Note: this map position is specific to Berlin area.
          */
         //mapView.setCenter(new LatLong(52.517037, 13.38886));
+        if (mapDataStore==null) return;
         double maxLat = mapDataStore.boundingBox().maxLatitude;
         double minLat = mapDataStore.boundingBox().minLatitude;
         double maxLong = mapDataStore.boundingBox().maxLongitude;
@@ -225,7 +214,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             // for ActivityCompat#requestPermissions for more details.
             return;
         }
-        locationManager.requestLocationUpdates(provider, 300, 5, this);
+        //locationManager.requestLocationUpdates(provider, 300, 5, this);
         /*Circle circle = new Circle(center, 50, Utils.createPaint(
                 AndroidGraphicFactory.INSTANCE.createColor(Color.BLUE), 0,
                 Style.FILL), null);
@@ -288,6 +277,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
      }
 
     private void setMapDataStore(File file) {
+        if (file==null) return;
         locationManager.removeUpdates(this);
         mapDataStore = new MapFile(file);
         TileRendererLayer tileRendererLayer = new TileRendererLayer(tileCache, mapDataStore,
@@ -298,9 +288,10 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
          * On its own a tileRendererLayer does not know where to display the map, so we need to
          * associate it with our mapView.
          */
+        mapView.setZoomLevel(zoomLevel);
         mapView.getLayerManager().getLayers().clear();
         mapView.getLayerManager().getLayers().add(tileRendererLayer);
-        setMapCenter(mapDataStore,zoomLevel);
+        //setMapCenter(mapDataStore,zoomLevel);
         //locationManager.removeUpdates(this);
 
     }
@@ -384,8 +375,33 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             case R.id.action_selectgpx:
                 openGpx(null);
                 return true;
+            case R.id.action_cleargpx:
+                clearTrack();
+                return true;
             case R.id.action_selectmap:
                 openMap(null);
+                return true;
+            case R.id.action_centermap:
+                setMapCenter();
+                return true;
+            case R.id.action_record:
+                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+                        ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+                    // TODO: Consider calling
+                    //    ActivityCompat#requestPermissions
+                    // here to request the missing permissions, and then overriding
+                    //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
+                    //                                          int[] grantResults)
+                    // to handle the case where the user grants the permission. See the documentation
+                    // for ActivityCompat#requestPermissions for more details.
+
+                }
+                isRecording=true;
+                locationManager.requestLocationUpdates(provider, 300, 5, this);
+                return true;
+            case R.id.action_stop:
+                isRecording=false;
+                locationManager.removeUpdates(this);
                 return true;
             case R.id.action_testing:
                 // User chose the "Favorite" action, mark the current item

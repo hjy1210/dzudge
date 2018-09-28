@@ -3,9 +3,16 @@
     <!-- Base application theme. -->
     <style name="AppTheme" parent="Theme.AppCompat.Light.DarkActionBar">
         <!-- Customize your theme here. -->
-        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorPrimary">@color/colorGray</item>
         <item name="colorPrimaryDark">@color/colorPrimaryDark</item>
         <item name="colorAccent">@color/colorAccent</item>
+
+        <!-- To change the popup menu and app text color  -->
+        <item name="android:textColor">@color/colorBlue</item>
+
+        <!-- To change the background of options menu-->
+        <item name="android:itemBackground">@color/colorGray</item>
+
     </style>
 
 </resources>

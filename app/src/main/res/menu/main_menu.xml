@@ -2,22 +2,62 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
     <!-- "Mark Favorite", should appear as action button if possible -->
+    <item android:icon="@drawable/ic_map_black_24dp"
+        android:title="地圖"
+        app:showAsAction="always|withText"
+        android:orderInCategory="1">
+        <menu >
+            <item
+                android:id="@+id/action_selectmap"
+                android:icon="@drawable/ic_map_black_24dp"
+                android:title="更換地圖"
+                app:showAsAction="ifRoom"/>
+            <item
+                android:id="@+id/action_centermap"
+                android:icon="@drawable/ic_center_focus"
+                android:title="地圖中心"
+                app:showAsAction="ifRoom"/>
+        </menu>
+    </item>
     <item
-        android:id="@+id/action_selectmap"
-        android:icon="@drawable/ic_map_black_24dp"
-        android:title="action_selectmap"
-        app:showAsAction="ifRoom"/>
+        android:icon="@drawable/ic_track"
+        android:title="軌跡"
+        app:showAsAction="always|withText"
+        android:orderInCategory="1">
+        <menu>
+            <item android:id="@+id/action_record"
+                android:icon="@drawable/ic_track"
+                android:title="開始記錄"/>
+            <item android:id="@+id/action_stop"
+                android:title="停止紀錄"/>
+        </menu>
+
+    </item >
     <item
-        android:id="@+id/action_selectgpx"
-        android:icon="@drawable/ic_gesture_black_24dp"
-        android:title="action_selectgpx"
-        app:showAsAction="ifRoom"/>
+        android:icon="@drawable/ic_way"
+        android:title="航跡"
+        app:showAsAction="always|withText"
+        android:orderInCategory="1">
+        <menu>
+            <item android:id="@+id/action_selectgpx"
+                android:icon="@drawable/ic_way"
+                android:title="選取航跡"/>
+            <item android:id="@+id/action_cleargpx"
+                android:title="清除航跡"/>
+        </menu>
+
+    </item >
     <!-- Settings, should always be in the overflow -->
-    <item android:id="@+id/action_settings"
-        android:icon="@drawable/ic_settings_black_24dp"
-        android:title="設定"
-        app:showAsAction="never"/>
-    <item android:id="@+id/action_testing"
-        android:title="測試"
-        app:showAsAction="never"/>
+    <item app:showAsAction="always|withText" android:title="..." android:orderInCategory="100">
+        <menu>
+            <item android:id="@+id/action_settings"
+                android:icon="@drawable/ic_settings_black_24dp"
+                app:showAsAction="never"
+                android:title="設定"/>
+            <item android:id="@+id/action_testing"
+                android:title="測試"
+                app:showAsAction="never"/>
+        </menu>
+
+    </item>
 </menu>
