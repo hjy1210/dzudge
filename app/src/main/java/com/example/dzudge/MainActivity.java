@@ -10,6 +10,7 @@ import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.net.Uri;
+import android.opengl.Visibility;
 import android.os.Bundle;
 import android.os.Environment;
 import android.support.annotation.NonNull;
@@ -18,6 +19,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -71,7 +73,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
+        setContentView(R.layout.activity_main);
         locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
         // Define the criteria how to select the locatioin provider -> use
         // default
@@ -113,8 +115,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
          * MapView on the fly and make the content view of the activity the MapView. This means
          * that no other elements make up the content of this activity.
          */
-        mapView = new MapView(this);
-        setContentView(mapView);
+        mapView=(MapView)findViewById(R.id.map);
+        //mapView = new MapView(this);
+        //setContentView(mapView);
 
         try {
             /*
@@ -143,7 +146,18 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         Toast.makeText(this, "onCreate", Toast.LENGTH_LONG).show();
 
     }
-
+    public void onClickLeftShade(View view){
+        //Toast.makeText(this,"You tap me",Toast.LENGTH_SHORT);
+        view.setVisibility(View.INVISIBLE);
+        View btn=(Button) findViewById(R.id.left_data);
+        btn.setVisibility(View.VISIBLE);
+    }
+    public void onClickLeftData(View view){
+        //Toast.makeText(this,"You tap me",Toast.LENGTH_SHORT);
+        view.setVisibility(View.INVISIBLE);
+        View btn=(Button) findViewById(R.id.left_shade);
+        btn.setVisibility(View.VISIBLE);
+    }
     @Override
     protected void onStart() {
         super.onStart();
@@ -274,6 +288,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
      }
 
     private void setMapDataStore(File file) {
+        locationManager.removeUpdates(this);
         mapDataStore = new MapFile(file);
         TileRendererLayer tileRendererLayer = new TileRendererLayer(tileCache, mapDataStore,
                 mapView.getModel().mapViewPosition, AndroidGraphicFactory.INSTANCE);
@@ -286,6 +301,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         mapView.getLayerManager().getLayers().clear();
         mapView.getLayerManager().getLayers().add(tileRendererLayer);
         setMapCenter(mapDataStore,zoomLevel);
+        //locationManager.removeUpdates(this);
+
     }
 
     @Override

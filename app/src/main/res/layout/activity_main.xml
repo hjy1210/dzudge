@@ -11,4 +11,23 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         ></org.mapsforge.map.android.view.MapView>
+
+    <Button
+        android:id="@+id/left_shade"
+        android:layout_width="30dp"
+        android:layout_height="40dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:background="#55333333"
+        android:onClick="onClickLeftShade"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+    <Button
+        android:id="@+id/left_data"
+        android:visibility="invisible"
+        android:layout_width="80dp"
+        android:layout_height="100dp"
+        android:layout_marginTop="20dp"
+        android:onClick="onClickLeftData"
+        android:background="@android:drawable/dialog_holo_light_frame" />
 </android.support.constraint.ConstraintLayout>
