@@ -47,6 +47,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.List;
 
 import javax.xml.parsers.DocumentBuilder;
@@ -57,7 +58,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     private static final int READ_REQUEST_GPX = 42;
 
     private MapDataStore mapDataStore;
-    private Gpx gpx;
+    private Gpx gpx, myTrack;
     private String gpxString;
     private MapView mapView;
     private String map;
@@ -70,6 +71,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     private LocationManager locationManager;
     private String provider;
     private boolean inspectLifeCycle;
+    private TrackSegment mySegment;
+    private Layer myTrackLayer;
     Menu menu;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -130,16 +133,6 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     protected void onStart() {
         super.onStart();
         if (inspectLifeCycle) Toast.makeText(this, "onStart", Toast.LENGTH_LONG).show();
-    }
-    @Override
-    protected void onRestart() {
-        super.onRestart();
-        if (inspectLifeCycle) Toast.makeText(this, "onRestart", Toast.LENGTH_LONG).show();
-    }
-    @Override
-    protected void onResume() {
-        super.onResume();
-        if (inspectLifeCycle) Toast.makeText(this, "onResume", Toast.LENGTH_LONG).show();
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
                 ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
@@ -155,10 +148,19 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             locationManager.requestLocationUpdates(provider, 300, 5, this);
     }
     @Override
+    protected void onRestart() {
+        super.onRestart();
+        if (inspectLifeCycle) Toast.makeText(this, "onRestart", Toast.LENGTH_LONG).show();
+    }
+    @Override
+    protected void onResume() {
+        super.onResume();
+        if (inspectLifeCycle) Toast.makeText(this, "onResume", Toast.LENGTH_LONG).show();
+    }
+    @Override
     protected void onPause() {
         super.onPause();
         if (inspectLifeCycle) Toast.makeText(this, "onPause", Toast.LENGTH_LONG).show();
-        locationManager.removeUpdates(this);
     }
     @Override
     protected void onStop() {
@@ -173,8 +175,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
          */
         mapView.destroyAll();
         AndroidGraphicFactory.clearResourceMemoryCache();
-        Toast.makeText(this,"onDestroy",Toast.LENGTH_LONG).show();
-        if (inspectLifeCycle) super.onDestroy();
+        if (inspectLifeCycle) Toast.makeText(this,"onDestroy",Toast.LENGTH_LONG).show();
+        if(isRecording) locationManager.removeUpdates(this);
+        super.onDestroy();
     }
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent resultData) {
@@ -239,11 +242,18 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 MenuItem it=menu.findItem(R.id.action_record);
                 if (isRecording) {
                     it.setTitle("停止記錄");
+                    myTrack=new Gpx(new ArrayList<WayPoint>(), new ArrayList<Track>());
+                    mySegment=new TrackSegment(new ArrayList<TrackPoint>());
+                    ArrayList<TrackSegment> segments=new ArrayList<TrackSegment>();
+                    segments.add(mySegment);
+                    Track track=new Track("first track","test",segments);
+                    myTrack._trks.add(track);
                     locationManager.requestLocationUpdates(provider, 300, 5, this);
                 }
                 else {
                     it.setTitle("記錄軌跡");
                     locationManager.removeUpdates(this);
+                    Toast.makeText(this, myTrack.toString(),Toast.LENGTH_LONG).show();
                 }
                return true;
             case R.id.action_testing:
@@ -268,6 +278,11 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                 R.drawable.marker_green,center);
         mapView.getLayerManager().getLayers().add(lastPos);
         mapView.setCenter(center);
+        //Toast.makeText(this,center.toString(),Toast.LENGTH_LONG).show();
+        TrackPoint tpt=new TrackPoint(center,location.getAltitude(), Calendar.getInstance().getTime());
+        //Toast.makeText(this,tpt.toString(),Toast.LENGTH_SHORT).show();
+        mySegment._trackPoints.add(tpt);
+        updateMyTrackLayer();
     }
     @Override
     public void onStatusChanged(String provider, int status, Bundle extras) {
@@ -315,7 +330,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     }
     private void setMapDataStore(File file) {
         if (file==null) return;
-        locationManager.removeUpdates(this);
+        if (isRecording) locationManager.removeUpdates(this);
         mapDataStore = new MapFile(file);
         TileRendererLayer tileRendererLayer = new TileRendererLayer(tileCache, mapDataStore,
                 mapView.getModel().mapViewPosition, AndroidGraphicFactory.INSTANCE);
@@ -327,6 +342,8 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         mapView.setZoomLevel(zoomLevel);
         mapView.getLayerManager().getLayers().clear();
         mapView.getLayerManager().getLayers().add(tileRendererLayer);
+        if (isRecording) locationManager.requestLocationUpdates(provider, 300, 5, this);
+
     }
     private void setMapCenter() {
         if (mapDataStore==null) return;
@@ -399,5 +416,19 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             for (int i=0;i<trackLayers.size();i++)
                 mapView.getLayerManager().getLayers().remove(trackLayers.get(i));
         }
+    }
+    private void updateMyTrackLayer(){
+        if (myTrackLayer!=null) mapView.getLayerManager().getLayers().remove(myTrackLayer);
+        Polyline polyline = new Polyline(Utils.createPaint(
+                AndroidGraphicFactory.INSTANCE.createColor(Color.RED),
+                (int) (2 * mapView.getModel().displayModel.getScaleFactor()),
+                Style.STROKE), AndroidGraphicFactory.INSTANCE);
+        List<LatLong> latLongs = new ArrayList<>();
+        for (int k=0;k<mySegment._trackPoints.size();k++){
+            latLongs.add(mySegment._trackPoints.get(k)._latLong);
+        }
+        polyline.setPoints(latLongs);
+        myTrackLayer=polyline;
+        mapView.getLayerManager().getLayers().add(myTrackLayer);
     }
 }

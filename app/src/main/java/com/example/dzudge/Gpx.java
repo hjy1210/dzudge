@@ -20,14 +20,14 @@ public class Gpx {
         _trks=trks;
     }
     static TimeZone utc = TimeZone.getTimeZone("GMT");
-    static SimpleDateFormat  m_ISO8601Local = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+    static SimpleDateFormat  gpxFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
     public static String test(){
         Date date;
         try {
-            m_ISO8601Local.setTimeZone(utc);
-            date=m_ISO8601Local.parse("2018-08-01T09:19:25Z"); //"2018-08-01T09:19:25Z"
-            Log.i("Date",""+date.getTime());
-            return date.toString();
+            gpxFormat.setTimeZone(utc);
+            date=gpxFormat.parse("2018-08-01T09:19:25Z"); //"2018-08-01T09:19:25Z"
+            //Log.i("Date",""+date.getTime());
+            return date.toString()+"\n"+gpxFormat.format(date);
         }
         catch(Exception e){
             e.printStackTrace();
