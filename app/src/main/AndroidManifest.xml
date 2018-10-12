@@ -9,6 +9,9 @@
     <!-- Explicit permission needed only for DownloadManager, see #723 -->
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+
+
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -33,6 +36,10 @@
                 android:value=".EditMessageActivity" />
         </activity>
         <activity android:name=".EditMessageActivity" />
+        <service
+            android:name=".LocationUpdatesService"
+            android:enabled="true"
+            android:exported="false" />
     </application>
 
 </manifest>

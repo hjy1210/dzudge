@@ -2,8 +2,13 @@ package com.example.dzudge;
 
 import android.Manifest;
 import android.app.Activity;
+import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Criteria;
 import android.location.Location;
@@ -13,12 +18,18 @@ import android.net.Uri;
 import android.opengl.Visibility;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.IBinder;
+import android.preference.PreferenceManager;
+import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.v4.app.ActivityCompat;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -48,13 +59,17 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
-public class MainActivity extends AppCompatActivity implements LocationListener {
+import android.support.design.widget.Snackbar;
+
+
+public class MainActivity extends AppCompatActivity implements SharedPreferences.OnSharedPreferenceChangeListener{
     private static final int READ_REQUEST_GPX = 42;
 
     private MapDataStore mapDataStore;
@@ -68,20 +83,70 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     private ArrayList<Layer> trackLayers;
     private Layer lastPos;
     private boolean isRecording;
-    private LocationManager locationManager;
-    private String provider;
+    //private LocationManager locationManager;
+    //private String provider;
     private boolean inspectLifeCycle;
     private TrackSegment mySegment;
     private Layer myTrackLayer;
     Menu menu;
+
+    ///// copy from LocationUpdatesForegroundService
+    private ArrayList<String> locations=new ArrayList<>();
+    //private ListView listView;
+    private ArrayAdapter<String> adapter;
+    private static final String TAG = MainActivity.class.getSimpleName();
+
+    // Used in checking for runtime permissions.
+    private static final int REQUEST_PERMISSIONS_REQUEST_CODE = 34;
+
+    // The BroadcastReceiver used to listen from broadcasts from the service.
+    private MyReceiver myReceiver;
+
+    // A reference to the service used to get location updates.
+    private LocationUpdatesService mService = null;
+
+    // Tracks the bound state of the service.
+    private boolean mBound = false;
+
+    // UI elements.
+    //private Button mRequestLocationUpdatesButton;
+    //private Button mRemoveLocationUpdatesButton;
+
+    // Monitors the state of the connection to the service.
+    private final ServiceConnection mServiceConnection = new ServiceConnection() {
+
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            LocationUpdatesService.LocalBinder binder = (LocationUpdatesService.LocalBinder) service;
+            mService = binder.getService();
+            mBound = true;
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            mService = null;
+            mBound = false;
+        }
+    };
+
+
+    //
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
-        Criteria criteria = new Criteria();
-        provider = locationManager.getBestProvider(criteria, false);
+        myReceiver = new MyReceiver();
+        if (GpxUtils.requestingLocationUpdates(this)) {
+            if (!checkPermissions()) {
+                requestPermissions();
+            }
+        }
+
+        //locationManager = (LocationManager) getSystemService(Context.LOCATION_SERVICE);
+        //Criteria criteria = new Criteria();
+        //provider = locationManager.getBestProvider(criteria, false);
 
         zoomLevel = 10;
          /*
@@ -132,8 +197,11 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     @Override
     protected void onStart() {
         super.onStart();
+        PreferenceManager.getDefaultSharedPreferences(this)
+                .registerOnSharedPreferenceChangeListener(this);
+
         if (inspectLifeCycle) Toast.makeText(this, "onStart", Toast.LENGTH_LONG).show();
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
+        /*if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
                 ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
             // TODO: Consider calling
             //    ActivityCompat#requestPermissions
@@ -143,9 +211,11 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
             // to handle the case where the user grants the permission. See the documentation
             // for ActivityCompat#requestPermissions for more details.
             //return;
-        }
-        if (mapDataStore!=null && isRecording)
-            locationManager.requestLocationUpdates(provider, 300, 5, this);
+        }*/
+        //if (mapDataStore!=null && isRecording && mService!=null)
+            //locationManager.requestLocationUpdates(provider, 300, 5, this);
+        bindService(new Intent(this, LocationUpdatesService.class), mServiceConnection,
+                Context.BIND_AUTO_CREATE);
     }
     @Override
     protected void onRestart() {
@@ -156,14 +226,39 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     protected void onResume() {
         super.onResume();
         if (inspectLifeCycle) Toast.makeText(this, "onResume", Toast.LENGTH_LONG).show();
+        String str=PreferenceManager.getDefaultSharedPreferences(this).getString(
+                "hjy", "");
+        if (!str.equals("")) {
+            //adapter.add(str);
+            Toast.makeText(this,str,Toast.LENGTH_LONG).show();
+            ArrayList<TrackPoint> trks=GpxUtils.extractWpts(str);
+            if (trks.size()>0) updateCursorWithTrack(trks);
+            ////// TODO
+            PreferenceManager.getDefaultSharedPreferences(this).edit().putString("hjy","").apply();
+        }
+
+        LocalBroadcastManager.getInstance(this).registerReceiver(myReceiver,
+                new IntentFilter(LocationUpdatesService.ACTION_BROADCAST));
+
     }
     @Override
     protected void onPause() {
+        LocalBroadcastManager.getInstance(this).unregisterReceiver(myReceiver);
         super.onPause();
         if (inspectLifeCycle) Toast.makeText(this, "onPause", Toast.LENGTH_LONG).show();
     }
     @Override
     protected void onStop() {
+        if (mBound) {
+            // Unbind from the service. This signals to the service that this activity is no longer
+            // in the foreground, and the service can respond by promoting itself to a foreground
+            // service.
+            unbindService(mServiceConnection);
+            mBound = false;
+        }
+        PreferenceManager.getDefaultSharedPreferences(this)
+                .unregisterOnSharedPreferenceChangeListener(this);
+
         super.onStop();
         if (inspectLifeCycle) Toast.makeText(this, "onStop", Toast.LENGTH_LONG).show();
     }
@@ -176,7 +271,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         mapView.destroyAll();
         AndroidGraphicFactory.clearResourceMemoryCache();
         if (inspectLifeCycle) Toast.makeText(this,"onDestroy",Toast.LENGTH_LONG).show();
-        if(isRecording) locationManager.removeUpdates(this);
+        if(isRecording)
+            //locationManager.removeUpdates(this);
+            mService.removeLocationUpdates();
         super.onDestroy();
     }
     @Override
@@ -248,12 +345,18 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
                     segments.add(mySegment);
                     Track track=new Track("first track","test",segments);
                     myTrack._trks.add(track);
-                    locationManager.requestLocationUpdates(provider, 300, 5, this);
+                    //locationManager.requestLocationUpdates(provider, 300, 5, this);
+                    if (checkPermissions()) {
+                        mService.requestLocationUpdates();
+                    } else {
+                        requestPermissions();
+                    }
                 }
                 else {
                     it.setTitle("記錄軌跡");
-                    locationManager.removeUpdates(this);
+                    //locationManager.removeUpdates(this);
                     Toast.makeText(this, myTrack.toString(),Toast.LENGTH_LONG).show();
+                    mService.removeLocationUpdates();
                 }
                return true;
             case R.id.action_testing:
@@ -266,7 +369,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     }
 
     //LocationListener has public methods:onLocationChanged, onStatusChanged, onProviderEnabled,onProviderDisabled
-    @Override
+    /*@Override
     public void onLocationChanged(Location location) {
         double lat = (location.getLatitude());
         double lng = (location.getLongitude());
@@ -297,7 +400,7 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     public void onProviderDisabled(String provider) {
         Toast.makeText(this, "Disabled provider " + provider,
                 Toast.LENGTH_SHORT).show();
-    }
+    }*/
 
     // onClickLeftShade, onClickLeftData prepare to use overlay options
     public void onClickLeftShade(View view){
@@ -330,7 +433,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
     }
     private void setMapDataStore(File file) {
         if (file==null) return;
-        if (isRecording) locationManager.removeUpdates(this);
+        if (isRecording)
+            //locationManager.removeUpdates(this);
+            mService.removeLocationUpdates();
         mapDataStore = new MapFile(file);
         TileRendererLayer tileRendererLayer = new TileRendererLayer(tileCache, mapDataStore,
                 mapView.getModel().mapViewPosition, AndroidGraphicFactory.INSTANCE);
@@ -342,7 +447,9 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         mapView.setZoomLevel(zoomLevel);
         mapView.getLayerManager().getLayers().clear();
         mapView.getLayerManager().getLayers().add(tileRendererLayer);
-        if (isRecording) locationManager.requestLocationUpdates(provider, 300, 5, this);
+        if (isRecording)
+            //locationManager.requestLocationUpdates(provider, 300, 5, this);
+            mService.requestLocationUpdates();
 
     }
     private void setMapCenter() {
@@ -430,5 +537,142 @@ public class MainActivity extends AppCompatActivity implements LocationListener 
         polyline.setPoints(latLongs);
         myTrackLayer=polyline;
         mapView.getLayerManager().getLayers().add(myTrackLayer);
+    }
+
+    @Override
+    public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String s) {
+        // Update the buttons state depending on whether location updates are being requested.
+        if (s.equals(GpxUtils.KEY_REQUESTING_LOCATION_UPDATES)) {
+            setButtonsState(sharedPreferences.getBoolean(GpxUtils.KEY_REQUESTING_LOCATION_UPDATES,
+                    false));
+        }
+
+    }
+    private void requestPermissions() {
+        boolean shouldProvideRationale =
+                ActivityCompat.shouldShowRequestPermissionRationale(this,
+                        Manifest.permission.ACCESS_FINE_LOCATION);
+
+        // Provide an additional rationale to the user. This would happen if the user denied the
+        // request previously, but didn't check the "Don't ask again" checkbox.
+        if (shouldProvideRationale) {
+            Log.i(TAG, "Displaying permission rationale to provide additional context.");
+            Snackbar.make(
+                    findViewById(R.id.activity_main),
+                    R.string.permission_rationale,
+                    Snackbar.LENGTH_INDEFINITE)
+                    .setAction(R.string.ok, new View.OnClickListener() {
+                        @Override
+                        public void onClick(View view) {
+                            // Request permission
+                            ActivityCompat.requestPermissions(MainActivity.this,
+                                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                                    REQUEST_PERMISSIONS_REQUEST_CODE);
+                        }
+                    })
+                    .show();
+        } else {
+            Log.i(TAG, "Requesting permission");
+            // Request permission. It's possible this can be auto answered if device policy
+            // sets the permission in a given state or the user denied the permission
+            // previously and checked "Never ask again".
+            ActivityCompat.requestPermissions(MainActivity.this,
+                    new String[]{Manifest.permission.ACCESS_FINE_LOCATION},
+                    REQUEST_PERMISSIONS_REQUEST_CODE);
+        }
+    }
+    private class MyReceiver extends BroadcastReceiver {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            Location location = intent.getParcelableExtra(LocationUpdatesService.EXTRA_LOCATION);
+            if (location != null) {
+                //locations.add(Utils.getLocationText(location));
+                Log.i("Location Message:",""+locations.size());
+                //adapter.add(GpxUtils.getLocationText(location));
+                Toast.makeText(MainActivity.this, GpxUtils.getLocationText(location),
+                        Toast.LENGTH_SHORT).show();
+                ArrayList<TrackPoint> trackPoints=new ArrayList<>();
+                trackPoints.add(new TrackPoint(new LatLong(location.getLatitude(),location.getLongitude()),
+                        location.getAltitude(),new Date(location.getTime())));
+                updateCursorWithTrack(trackPoints);
+            }
+        }
+    }
+    /**
+     * Returns the current state of the permissions needed.
+     */
+    private boolean checkPermissions() {
+        return  PackageManager.PERMISSION_GRANTED == ActivityCompat.checkSelfPermission(this,
+                Manifest.permission.ACCESS_FINE_LOCATION);
+    }
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
+        Log.i(TAG, "onRequestPermissionResult");
+        if (requestCode == REQUEST_PERMISSIONS_REQUEST_CODE) {
+            if (grantResults.length <= 0) {
+                // If user interaction was interrupted, the permission request is cancelled and you
+                // receive empty arrays.
+                Log.i(TAG, "User interaction was cancelled.");
+            } else if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                // Permission was granted.
+                mService.requestLocationUpdates();
+            } else {
+                // Permission denied.
+                setButtonsState(false);
+                Snackbar.make(
+                        findViewById(R.id.activity_main),
+                        R.string.permission_denied_explanation,
+                        Snackbar.LENGTH_INDEFINITE)
+                        .setAction(R.string.settings, new View.OnClickListener() {
+                            @Override
+                            public void onClick(View view) {
+                                // Build intent that displays the App settings screen.
+                                Intent intent = new Intent();
+                                intent.setAction(
+                                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS);
+                                Uri uri = Uri.fromParts("package",
+                                        BuildConfig.APPLICATION_ID, null);
+                                intent.setData(uri);
+                                intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                                startActivity(intent);
+                            }
+                        })
+                        .show();
+            }
+        }
+    }
+
+    private void setButtonsState(boolean requestingLocationUpdates) {
+        MenuItem it=menu.findItem(R.id.action_record);
+        if (requestingLocationUpdates) {
+            //mRequestLocationUpdatesButton.setEnabled(false);
+            //mRemoveLocationUpdatesButton.setEnabled(true);
+            isRecording=true;
+            it.setTitle("停止紀錄");
+        } else {
+            //mRequestLocationUpdatesButton.setEnabled(true);
+            //mRemoveLocationUpdatesButton.setEnabled(false);
+            isRecording=false;
+            it.setTitle("開始紀錄");
+        }
+    }
+    private void updateCursorWithTrack(ArrayList<TrackPoint> trackPoints){
+        //double lat = (location.getLatitude());
+        //double lng = (location.getLongitude());
+        //LatLong center=new LatLong(lat,lng);
+        LatLong center = trackPoints.get(0)._latLong;
+        if (lastPos!=null){
+            mapView.getLayerManager().getLayers().remove(lastPos);
+        }
+        lastPos = Utils.createMarker(this,
+                R.drawable.marker_green,center);
+        mapView.getLayerManager().getLayers().add(lastPos);
+        mapView.setCenter(center);
+        //Toast.makeText(this,center.toString(),Toast.LENGTH_LONG).show();
+        //TrackPoint tpt=new TrackPoint(center,location.getAltitude(), Calendar.getInstance().getTime());
+        //Toast.makeText(this,tpt.toString(),Toast.LENGTH_SHORT).show();
+        mySegment._trackPoints.addAll(trackPoints);
+        updateMyTrackLayer();
+
     }
 }

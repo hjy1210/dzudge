@@ -1,25 +1,22 @@
 package com.example.dzudge;
 
-import android.net.Uri;
+import android.content.Context;
+import android.location.Location;
+import android.preference.PreferenceManager;
 
 import org.mapsforge.core.model.LatLong;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
-import org.xml.sax.SAXException;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
+import java.text.DateFormat;
+import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
+//import java.util.Locale;
 import java.util.TimeZone;
 
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 
 public class GpxUtils {
     static TimeZone utc = TimeZone.getTimeZone("GMT");
@@ -95,5 +92,67 @@ public class GpxUtils {
             tracks.add(new Track(name,desc,trackSegments));
         }
         return tracks;
+    }
+
+    static final String KEY_REQUESTING_LOCATION_UPDATES = "requesting_location_updates";
+    //private static TimeZone utc = TimeZone.getTimeZone("GMT");
+    //private static SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'",Locale.CHINESE);
+    //static{
+    //    dateFormatter.setTimeZone(utc);
+    //}
+
+
+    /**
+     * Returns true if requesting location updates, otherwise returns false.
+     *
+     * @param context The {@link Context}.
+     */
+    static boolean requestingLocationUpdates(Context context) {
+        return PreferenceManager.getDefaultSharedPreferences(context)
+                .getBoolean(KEY_REQUESTING_LOCATION_UPDATES, false);
+    }
+
+    /**
+     * Stores the location updates state in SharedPreferences.
+     * @param requestingLocationUpdates The location updates state.
+     */
+    static void setRequestingLocationUpdates(Context context, boolean requestingLocationUpdates) {
+        PreferenceManager.getDefaultSharedPreferences(context)
+                .edit()
+                .putBoolean(KEY_REQUESTING_LOCATION_UPDATES, requestingLocationUpdates)
+                .apply();
+    }
+
+    /**
+     * Returns the {@code location} object as a human readable string.
+     * @param location  The {@link Location}.
+     */
+    static String getLocationText(Location location) {
+        return location == null ? "Unknown location" :
+                "" + location.getLatitude() + ", " + location.getLongitude() + ","+location.getAltitude()+","+dateFormatter.format(new Date(location.getTime()));
+    }
+
+    static String getLocationTitle(Context context) {
+       return context.getString(R.string.location_updated,
+                DateFormat.getDateTimeInstance().format(new Date()));
+    }
+    static ArrayList<TrackPoint> extractWpts(String str){
+        ArrayList<TrackPoint>trks=new ArrayList<>();
+        String[] lines=str.split("\n");
+        for (int i=0;i<lines.length;i++) {
+            String s1=lines[i].trim();
+            if (s1.equals("")) continue;
+            String[] fields=s1.split(",");
+            String time=fields[3];
+            Date date;
+            try{
+                date=dateFormatter.parse(time);
+                trks.add(new TrackPoint(new LatLong(Double.parseDouble(fields[0]),
+                        Double.parseDouble(fields[1])),Double.parseDouble(fields[2]),dateFormatter.parse(time)));
+            } catch (Exception e){
+                e.printStackTrace();
+            }
+        }
+        return trks;
     }
 }
