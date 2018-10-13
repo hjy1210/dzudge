@@ -406,7 +406,7 @@ public class MainActivity extends AppCompatActivity implements
 
     public void openMap(View view){
         ///// https://github.com/hedzr/android-file-chooser
-         new ChooserDialog().with(this)
+         new ChooserDialog(this)
                 //.withLayoutView(R.layout.activity_main)
                 .withFilter(false, false, "map")
                 .withStartFile(Environment.getExternalStorageDirectory().toString())
