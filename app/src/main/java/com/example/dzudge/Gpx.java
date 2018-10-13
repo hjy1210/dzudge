@@ -1,12 +1,12 @@
 package com.example.dzudge;
 
-import android.util.Log;
+//import android.util.Log;
 
-import org.mapsforge.core.model.LatLong;
+//import org.mapsforge.core.model.LatLong;
 
-import java.text.DateFormat;
+//import java.text.DateFormat;
 import java.text.SimpleDateFormat;
-import java.util.Calendar;
+//import java.util.Calendar;
 import java.util.Date;
 import java.util.ArrayList;
 import java.util.Locale;
@@ -19,9 +19,9 @@ public class Gpx {
         _wpts=wpts;
         _trks=trks;
     }
-    static TimeZone utc = TimeZone.getTimeZone("GMT");
-    static SimpleDateFormat  gpxFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-    public static String test(){
+    private static TimeZone utc = TimeZone.getTimeZone("GMT");
+    private static SimpleDateFormat  gpxFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'",Locale.CHINESE);
+    static String test(){
         Date date;
         try {
             gpxFormat.setTimeZone(utc);

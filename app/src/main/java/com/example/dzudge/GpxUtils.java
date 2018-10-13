@@ -10,17 +10,18 @@ import org.w3c.dom.Element;
 import org.w3c.dom.NodeList;
 
 import java.text.DateFormat;
-import java.text.ParsePosition;
+//import java.text.ParsePosition;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 //import java.util.Locale;
+import java.util.Locale;
 import java.util.TimeZone;
 
 
-public class GpxUtils {
-    static TimeZone utc = TimeZone.getTimeZone("GMT");
-    static SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
+class GpxUtils {
+    private static TimeZone utc = TimeZone.getTimeZone("GMT");
+    private static SimpleDateFormat dateFormatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'",Locale.CHINESE);
     static{
         dateFormatter.setTimeZone(utc);
     }
@@ -52,10 +53,10 @@ public class GpxUtils {
         else
             return null;
         }
-    public static ArrayList<WayPoint> getWayPoints(Document doc){
+    static ArrayList<WayPoint> getWayPoints(Document doc){
         //dateFormatter.setTimeZone(utc);
         NodeList wpts=doc.getElementsByTagName("wpt");
-        ArrayList<WayPoint> wayPoints=new ArrayList<WayPoint>();
+        ArrayList<WayPoint> wayPoints=new ArrayList<>();
         for (int i=0;i<wpts.getLength();i++){
             LatLong latLong=getLatLong((Element)wpts.item(i));
             double ele=getElevation((Element)wpts.item(i));
@@ -67,19 +68,19 @@ public class GpxUtils {
         }
         return wayPoints;
     }
-    public static ArrayList<Track> getTracks(Document doc){
+    static ArrayList<Track> getTracks(Document doc){
         //dateFormatter.setTimeZone(utc);
         NodeList trks=doc.getElementsByTagName("trk");
-        ArrayList<Track> tracks=new ArrayList<Track>();
+        ArrayList<Track> tracks=new ArrayList<>();
         for (int i=0;i<trks.getLength();i++){
             String name=getText((Element)trks.item(i),"name");
             String desc=getText((Element)trks.item(i),"desc");
             //tracks.add(new Track(name,null,null));
             NodeList nTrkSegments=((Element) trks.item(i)).getElementsByTagName("trkseg");
-            ArrayList<TrackSegment> trackSegments=new ArrayList<TrackSegment>();
+            ArrayList<TrackSegment> trackSegments=new ArrayList<>();
             for (int j=0;j<nTrkSegments.getLength();j++){
                 NodeList nTrackPoints=((Element)nTrkSegments.item(j)).getElementsByTagName("trkpt");
-                ArrayList<TrackPoint> trackPoints=new ArrayList<TrackPoint>();
+                ArrayList<TrackPoint> trackPoints=new ArrayList<>();
                 for (int k=0;k<nTrackPoints.getLength();k++){
                     LatLong latLong=getLatLong((Element)nTrackPoints.item(k));
                     double ele=getElevation((Element)nTrackPoints.item(k));
@@ -139,17 +140,17 @@ public class GpxUtils {
     static ArrayList<TrackPoint> extractWpts(String str){
         ArrayList<TrackPoint>trks=new ArrayList<>();
         String[] lines=str.split("\n");
-        for (int i=0;i<lines.length;i++) {
-            String s1=lines[i].trim();
+        for (String line : lines) {
+            String s1 = line.trim();
             if (s1.equals("")) continue;
-            String[] fields=s1.split(",");
-            String time=fields[3];
+            String[] fields = s1.split(",");
+            String time = fields[3];
             Date date;
-            try{
-                date=dateFormatter.parse(time);
+            try {
+                date = dateFormatter.parse(time);
                 trks.add(new TrackPoint(new LatLong(Double.parseDouble(fields[0]),
-                        Double.parseDouble(fields[1])),Double.parseDouble(fields[2]),dateFormatter.parse(time)));
-            } catch (Exception e){
+                        Double.parseDouble(fields[1])), Double.parseDouble(fields[2]), date));
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         }
