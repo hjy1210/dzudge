@@ -10,6 +10,10 @@ import android.content.IntentFilter;
 import android.content.ServiceConnection;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.hardware.Sensor;
+import android.hardware.SensorEvent;
+import android.hardware.SensorEventListener;
+import android.hardware.SensorManager;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
@@ -29,8 +33,11 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.animation.Animation;
+import android.view.animation.RotateAnimation;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -69,7 +76,8 @@ import javax.xml.parsers.ParserConfigurationException;
 import android.support.design.widget.Snackbar;
 
 
-public class MainActivity extends AppCompatActivity implements SharedPreferences.OnSharedPreferenceChangeListener{
+public class MainActivity extends AppCompatActivity implements
+        SharedPreferences.OnSharedPreferenceChangeListener,SensorEventListener {
     private static final int READ_REQUEST_GPX = 42;
 
     private MapDataStore mapDataStore;
@@ -107,6 +115,20 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
 
     // Tracks the bound state of the service.
     private boolean mBound = false;
+
+    // for compass
+    private ImageView mPointer;
+    private SensorManager mSensorManager;
+    private Sensor mAccelerometer;
+    private Sensor mMagnetometer;
+    private float[] mLastAccelerometer = new float[3];
+    private float[] mLastMagnetometer = new float[3];
+    private boolean mLastAccelerometerSet = false;
+    private boolean mLastMagnetometerSet = false;
+    private float[] mR = new float[9];
+    private float[] mOrientation = new float[3];
+    private float mCurrentDegree = 0f;
+
 
     // UI elements.
     //private Button mRequestLocationUpdatesButton;
@@ -193,6 +215,13 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         }
         if (inspectLifeCycle) Toast.makeText(this, "onCreate", Toast.LENGTH_LONG).show();
 
+        // for compass
+        mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
+        mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+        mMagnetometer = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+        mPointer = (ImageView) findViewById(R.id.pointer);
+
+
     }
     @Override
     protected void onStart() {
@@ -230,7 +259,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 "hjy", "");
         if (!str.equals("")) {
             //adapter.add(str);
-            Toast.makeText(this,str,Toast.LENGTH_LONG).show();
+            //Toast.makeText(this,str,Toast.LENGTH_LONG).show();
             ArrayList<TrackPoint> trks=GpxUtils.extractWpts(str);
             if (trks.size()>0) updateCursorWithTrack(trks);
             ////// TODO
@@ -240,12 +269,21 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         LocalBroadcastManager.getInstance(this).registerReceiver(myReceiver,
                 new IntentFilter(LocationUpdatesService.ACTION_BROADCAST));
 
+        // for compass
+        mSensorManager.registerListener(this, mAccelerometer, SensorManager.SENSOR_DELAY_GAME);
+        mSensorManager.registerListener(this, mMagnetometer, SensorManager.SENSOR_DELAY_GAME);
+
+
     }
     @Override
     protected void onPause() {
         LocalBroadcastManager.getInstance(this).unregisterReceiver(myReceiver);
         super.onPause();
         if (inspectLifeCycle) Toast.makeText(this, "onPause", Toast.LENGTH_LONG).show();
+
+        // for compass
+        mSensorManager.unregisterListener(this, mAccelerometer);
+        mSensorManager.unregisterListener(this, mMagnetometer);
     }
     @Override
     protected void onStop() {
@@ -589,8 +627,8 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
                 //locations.add(Utils.getLocationText(location));
                 Log.i("Location Message:",""+locations.size());
                 //adapter.add(GpxUtils.getLocationText(location));
-                Toast.makeText(MainActivity.this, GpxUtils.getLocationText(location),
-                        Toast.LENGTH_SHORT).show();
+                //Toast.makeText(MainActivity.this, GpxUtils.getLocationText(location),
+                //        Toast.LENGTH_SHORT).show();
                 ArrayList<TrackPoint> trackPoints=new ArrayList<>();
                 trackPoints.add(new TrackPoint(new LatLong(location.getLatitude(),location.getLongitude()),
                         location.getAltitude(),new Date(location.getTime())));
@@ -660,7 +698,7 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         //double lat = (location.getLatitude());
         //double lng = (location.getLongitude());
         //LatLong center=new LatLong(lat,lng);
-        LatLong center = trackPoints.get(0)._latLong;
+        LatLong center = trackPoints.get(trackPoints.size()-1)._latLong;
         if (lastPos!=null){
             mapView.getLayerManager().getLayers().remove(lastPos);
         }
@@ -675,4 +713,41 @@ public class MainActivity extends AppCompatActivity implements SharedPreferences
         updateMyTrackLayer();
 
     }
+    @Override
+    public void onSensorChanged(SensorEvent event) {
+        if (event.sensor == mAccelerometer) {
+            System.arraycopy(event.values, 0, mLastAccelerometer, 0, event.values.length);
+            mLastAccelerometerSet = true;
+        } else if (event.sensor == mMagnetometer) {
+            System.arraycopy(event.values, 0, mLastMagnetometer, 0, event.values.length);
+            mLastMagnetometerSet = true;
+        }
+        if (mLastAccelerometerSet && mLastMagnetometerSet) {
+            SensorManager.getRotationMatrix(mR, null, mLastAccelerometer, mLastMagnetometer);
+            SensorManager.getOrientation(mR, mOrientation);
+            float azimuthInRadians = mOrientation[0];
+            float azimuthInDegress = (float)(Math.toDegrees(azimuthInRadians)+360)%360;
+            RotateAnimation ra = new RotateAnimation(
+                    mCurrentDegree,
+                    -azimuthInDegress,
+                    Animation.RELATIVE_TO_SELF, 0.5f,
+                    Animation.RELATIVE_TO_SELF,
+                    0.5f);
+
+            ra.setDuration(250);
+
+            ra.setFillAfter(true);
+
+            mPointer.startAnimation(ra);
+            mCurrentDegree = -azimuthInDegress;
+        }
+    }
+
+    @Override
+    public void onAccuracyChanged(Sensor sensor, int accuracy) {
+        // TODO Auto-generated method stub
+
+    }
+
+
 }
