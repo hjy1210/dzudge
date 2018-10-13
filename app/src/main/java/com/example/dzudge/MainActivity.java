@@ -1,5 +1,7 @@
 package com.example.dzudge;
 
+import com.obsez.android.lib.filechooser.ChooserDialog;
+
 import android.Manifest;
 import android.app.Activity;
 import android.content.BroadcastReceiver;
@@ -14,12 +16,8 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import android.location.Criteria;
 import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
 import android.net.Uri;
-import android.opengl.Visibility;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.IBinder;
@@ -35,13 +33,12 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.animation.Animation;
 import android.view.animation.RotateAnimation;
-import android.widget.ArrayAdapter;
-import android.widget.Button;
+//import android.widget.ArrayAdapter;
+//import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.TextView;
+//import android.widget.TextView;
 import android.widget.Toast;
 
-import com.obsez.android.lib.filechooser.ChooserDialog;
 
 import org.mapsforge.core.graphics.Color;
 import org.mapsforge.core.graphics.Style;
@@ -52,8 +49,6 @@ import org.mapsforge.map.android.view.MapView;
 import org.mapsforge.map.datastore.MapDataStore;
 import org.mapsforge.map.layer.Layer;
 import org.mapsforge.map.layer.cache.TileCache;
-import org.mapsforge.map.layer.overlay.Circle;
-import org.mapsforge.map.layer.overlay.Marker;
 import org.mapsforge.map.layer.overlay.Polyline;
 import org.mapsforge.map.layer.renderer.TileRendererLayer;
 import org.mapsforge.map.reader.MapFile;
@@ -65,7 +60,6 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 
@@ -82,10 +76,9 @@ public class MainActivity extends AppCompatActivity implements
 
     private MapDataStore mapDataStore;
     private Gpx gpx, myTrack;
-    private String gpxString;
     private MapView mapView;
-    private String map;
-    private File mapFile;
+    //private String map;
+    //private File mapFile;
     private byte zoomLevel;
     private TileCache tileCache;
     private ArrayList<Layer> trackLayers;
@@ -99,9 +92,7 @@ public class MainActivity extends AppCompatActivity implements
     Menu menu;
 
     ///// copy from LocationUpdatesForegroundService
-    private ArrayList<String> locations=new ArrayList<>();
     //private ListView listView;
-    private ArrayAdapter<String> adapter;
     private static final String TAG = MainActivity.class.getSimpleName();
 
     // Used in checking for runtime permissions.
@@ -158,7 +149,7 @@ public class MainActivity extends AppCompatActivity implements
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
+        inspectLifeCycle=false;
         myReceiver = new MyReceiver();
         if (GpxUtils.requestingLocationUpdates(this)) {
             if (!checkPermissions()) {
@@ -189,7 +180,7 @@ public class MainActivity extends AppCompatActivity implements
          * that no other elements make up the content of this activity.
          */
         //mapView = new MapView(this);
-        mapView=(MapView)findViewById(R.id.map);
+        mapView=findViewById(R.id.map);
         try {
             /*
              * We then make some simple adjustments, such as showing a scale bar and zoom controls.
@@ -205,7 +196,7 @@ public class MainActivity extends AppCompatActivity implements
                     mapView.getModel().displayModel.getTileSize(), 1f,
                     mapView.getModel().frameBufferModel.getOverdrawFactor());
             //mapDataStore = getMapDataStore(map, tileCache);
-            setMapDataStore(mapFile);
+            //setMapDataStore(mapFile);
             //setMapCenter(mapDataStore, (byte) 13);
         } catch (Exception e) {
             /*
@@ -217,9 +208,11 @@ public class MainActivity extends AppCompatActivity implements
 
         // for compass
         mSensorManager = (SensorManager)getSystemService(SENSOR_SERVICE);
-        mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
-        mMagnetometer = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
-        mPointer = (ImageView) findViewById(R.id.pointer);
+        if (mSensorManager != null) {
+            mAccelerometer = mSensorManager.getDefaultSensor(Sensor.TYPE_ACCELEROMETER);
+            mMagnetometer = mSensorManager.getDefaultSensor(Sensor.TYPE_MAGNETIC_FIELD);
+        }
+        mPointer = findViewById(R.id.pointer);
 
 
     }
@@ -232,7 +225,7 @@ public class MainActivity extends AppCompatActivity implements
         if (inspectLifeCycle) Toast.makeText(this, "onStart", Toast.LENGTH_LONG).show();
         /*if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
                 ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-            // TODO: Consider calling
+            // ODO: Consider calling
             //    ActivityCompat#requestPermissions
             // here to request the missing permissions, and then overriding
             //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
@@ -258,11 +251,10 @@ public class MainActivity extends AppCompatActivity implements
         String str=PreferenceManager.getDefaultSharedPreferences(this).getString(
                 "hjy", "");
         if (!str.equals("")) {
-            //adapter.add(str);
             //Toast.makeText(this,str,Toast.LENGTH_LONG).show();
             ArrayList<TrackPoint> trks=GpxUtils.extractWpts(str);
             if (trks.size()>0) updateCursorWithTrack(trks);
-            ////// TODO
+            ////// ODO
             PreferenceManager.getDefaultSharedPreferences(this).edit().putString("hjy","").apply();
         }
 
@@ -321,7 +313,7 @@ public class MainActivity extends AppCompatActivity implements
             // Instead, a URI to that document will be contained in the return intent
             // provided to this method as a parameter.
             // Pull that URI using resultData.getData().
-            Uri uri = null;
+            Uri uri;
             if (resultData != null) {
                 uri = resultData.getData();
                 try {
@@ -341,7 +333,8 @@ public class MainActivity extends AppCompatActivity implements
         return true;
     }
     public boolean onOptionsItemSelected(MenuItem item) {
-        TextView textView;
+        String gpxString;
+
         Intent intent;
         switch (item.getItemId()) {
             case R.id.action_settings:
@@ -361,16 +354,6 @@ public class MainActivity extends AppCompatActivity implements
                 setMapCenter();
                 return true;
             case R.id.action_record:
-                if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED &&
-                        ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                    // TODO: Consider calling
-                    //    ActivityCompat#requestPermissions
-                    // here to request the missing permissions, and then overriding
-                    //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                    //                                          int[] grantResults)
-                    // to handle the case where the user grants the permission. See the documentation
-                    // for ActivityCompat#requestPermissions for more details.
-                }
                 isRecording=!isRecording;
                 //menu.findItem(R.id.action_stop).setEnabled(true);
                 //menu.findItem(R.id.action_record).setEnabled(false);
@@ -379,7 +362,7 @@ public class MainActivity extends AppCompatActivity implements
                     it.setTitle("停止記錄");
                     myTrack=new Gpx(new ArrayList<WayPoint>(), new ArrayList<Track>());
                     mySegment=new TrackSegment(new ArrayList<TrackPoint>());
-                    ArrayList<TrackSegment> segments=new ArrayList<TrackSegment>();
+                    ArrayList<TrackSegment> segments=new ArrayList<>();
                     segments.add(mySegment);
                     Track track=new Track("first track","test",segments);
                     myTrack._trks.add(track);
@@ -406,57 +389,25 @@ public class MainActivity extends AppCompatActivity implements
         }
     }
 
-    //LocationListener has public methods:onLocationChanged, onStatusChanged, onProviderEnabled,onProviderDisabled
-    /*@Override
-    public void onLocationChanged(Location location) {
-        double lat = (location.getLatitude());
-        double lng = (location.getLongitude());
-        LatLong center=new LatLong(lat,lng);
-        if (lastPos!=null){
-            mapView.getLayerManager().getLayers().remove(lastPos);
-        }
-        lastPos = Utils.createMarker(this,
-                R.drawable.marker_green,center);
-        mapView.getLayerManager().getLayers().add(lastPos);
-        mapView.setCenter(center);
-        //Toast.makeText(this,center.toString(),Toast.LENGTH_LONG).show();
-        TrackPoint tpt=new TrackPoint(center,location.getAltitude(), Calendar.getInstance().getTime());
-        //Toast.makeText(this,tpt.toString(),Toast.LENGTH_SHORT).show();
-        mySegment._trackPoints.add(tpt);
-        updateMyTrackLayer();
-    }
-    @Override
-    public void onStatusChanged(String provider, int status, Bundle extras) {
-        // TODO Auto-generated method stub
-    }
-    @Override
-    public void onProviderEnabled(String provider) {
-        Toast.makeText(this, "Enabled new provider " + provider,
-                Toast.LENGTH_SHORT).show();
-    }
-    @Override
-    public void onProviderDisabled(String provider) {
-        Toast.makeText(this, "Disabled provider " + provider,
-                Toast.LENGTH_SHORT).show();
-    }*/
 
     // onClickLeftShade, onClickLeftData prepare to use overlay options
     public void onClickLeftShade(View view){
         //Toast.makeText(this,"You tap me",Toast.LENGTH_SHORT);
         view.setVisibility(View.INVISIBLE);
-        View btn=(Button) findViewById(R.id.left_data);
+        View btn= findViewById(R.id.left_data);
         btn.setVisibility(View.VISIBLE);
     }
     public void onClickLeftData(View view){
         //Toast.makeText(this,"You tap me",Toast.LENGTH_SHORT);
         view.setVisibility(View.INVISIBLE);
-        View btn=(Button) findViewById(R.id.left_shade);
+        View btn= findViewById(R.id.left_shade);
         btn.setVisibility(View.VISIBLE);
     }
 
     public void openMap(View view){
         ///// https://github.com/hedzr/android-file-chooser
-        new ChooserDialog().with(this)
+         new ChooserDialog().with(this)
+                //.withLayoutView(R.layout.activity_main)
                 .withFilter(false, false, "map")
                 .withStartFile(Environment.getExternalStorageDirectory().toString())
                 .withChosenListener(new ChooserDialog.Result() {
@@ -496,7 +447,6 @@ public class MainActivity extends AppCompatActivity implements
         double minLat = mapDataStore.boundingBox().minLatitude;
         double maxLong = mapDataStore.boundingBox().maxLongitude;
         double minLong = mapDataStore.boundingBox().minLongitude;
-        LatLong center = new LatLong((maxLat + minLat) / 2, (maxLong + minLong) / 2);
         mapView.setCenter(new LatLong((maxLat + minLat) / 2, (maxLong + minLong) / 2));
         mapView.setZoomLevel(zoomLevel);
     }
@@ -508,31 +458,26 @@ public class MainActivity extends AppCompatActivity implements
         startActivityForResult(intent, READ_REQUEST_GPX);
     }
     private Gpx readGpx(Uri uri) throws IOException {
-        InputStream inputStream = getContentResolver().openInputStream(uri);
         DocumentBuilderFactory builderFactory = DocumentBuilderFactory.newInstance();
-        try {
+        try (InputStream inputStream = getContentResolver().openInputStream(uri)) {
             DocumentBuilder docBuilder = builderFactory.newDocumentBuilder();
             Document doc = docBuilder.parse(inputStream);
             ArrayList<WayPoint> wpts = GpxUtils.getWayPoints(doc);
             ArrayList<Track> trks = GpxUtils.getTracks(doc);
             return new Gpx(wpts, trks);
-        } catch (ParserConfigurationException e) {
+        } catch (ParserConfigurationException | SAXException e) {
             e.printStackTrace();
-        } catch (SAXException e) {
-            e.printStackTrace();
-        } finally {
-            inputStream.close();
         }
         return null;
     }
     private void addTrack(){
         if (gpx==null) return;
         clearTrack();
-        trackLayers=new ArrayList<Layer>();
+        trackLayers=new ArrayList<>();
         ArrayList<WayPoint> wpts=gpx._wpts;
         for (int i=0;i<wpts.size();i++){
-            WayPoint wpt=wpts.get(i);
-            LatLong latLong=wpt._latLong;
+            //WayPoint wpt=wpts.get(i);
+            //LatLong latLong=wpt._latLong;
             MarkerX marker1 = Utils.createTappableMarkerX(this,
                     R.drawable.marker_red, wpts.get(i));
             trackLayers.add(marker1);
@@ -624,9 +569,6 @@ public class MainActivity extends AppCompatActivity implements
         public void onReceive(Context context, Intent intent) {
             Location location = intent.getParcelableExtra(LocationUpdatesService.EXTRA_LOCATION);
             if (location != null) {
-                //locations.add(Utils.getLocationText(location));
-                Log.i("Location Message:",""+locations.size());
-                //adapter.add(GpxUtils.getLocationText(location));
                 //Toast.makeText(MainActivity.this, GpxUtils.getLocationText(location),
                 //        Toast.LENGTH_SHORT).show();
                 ArrayList<TrackPoint> trackPoints=new ArrayList<>();
@@ -745,7 +687,7 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
-        // TODO Auto-generated method stub
+        // ODO Auto-generated method stub
 
     }
 
