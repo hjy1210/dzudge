@@ -520,6 +520,26 @@ public class MainActivity extends AppCompatActivity implements
         polyline.setPoints(latLongs);
         myTrackLayer=polyline;
         mapView.getLayerManager().getLayers().add(myTrackLayer);
+
+        LatLong center = latLongs.get(latLongs.size()-1);
+        if (lastPos!=null){
+            mapView.getLayerManager().getLayers().remove(lastPos);
+        }
+        float degree=0;
+        int count=latLongs.size();
+        if (count>1){
+            LatLong last=latLongs.get(count-1);
+            LatLong last2=latLongs.get(count-2);
+            //double dist=last.distance(last2);
+            //if (dist>5){
+            double angle=Math.atan2(last.longitude-last2.longitude,last.latitude-last2.latitude);
+            degree=(float)(angle*180/Math.PI);
+            //}
+        }
+        lastPos = Utils.createRotateMarker(this,
+                R.drawable.navigation,center,degree-45);
+        mapView.getLayerManager().getLayers().add(lastPos);
+        mapView.setCenter(center);
     }
 
     @Override
@@ -640,14 +660,25 @@ public class MainActivity extends AppCompatActivity implements
         //double lat = (location.getLatitude());
         //double lng = (location.getLongitude());
         //LatLong center=new LatLong(lat,lng);
-        LatLong center = trackPoints.get(trackPoints.size()-1)._latLong;
+        /*LatLong center = trackPoints.get(trackPoints.size()-1)._latLong;
         if (lastPos!=null){
             mapView.getLayerManager().getLayers().remove(lastPos);
         }
-        lastPos = Utils.createMarker(this,
-                R.drawable.marker_green,center);
+        float degree=0;
+        int count=trackPoints.size();
+        if (count>1){
+            LatLong last=trackPoints.get(count-1)._latLong;
+            LatLong last2=trackPoints.get(count-2)._latLong;
+            //double dist=last.distance(last2);
+            //if (dist>5){
+                double angle=Math.atan2(last.longitude-last2.longitude,last.latitude-last2.latitude);
+                degree=(float)(angle*180/Math.PI);
+            //}
+        }
+        lastPos = Utils.createRotateMarker(this,
+                R.drawable.marker_green,center,degree);
         mapView.getLayerManager().getLayers().add(lastPos);
-        mapView.setCenter(center);
+        mapView.setCenter(center); */
         //Toast.makeText(this,center.toString(),Toast.LENGTH_LONG).show();
         //TrackPoint tpt=new TrackPoint(center,location.getAltitude(), Calendar.getInstance().getTime());
         //Toast.makeText(this,tpt.toString(),Toast.LENGTH_SHORT).show();

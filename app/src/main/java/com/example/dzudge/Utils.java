@@ -76,6 +76,18 @@ public final class Utils {
         return new Marker(latLong, bitmap, 0, -bitmap.getHeight() / 2);
     }
 
+    @SuppressWarnings("deprecation")
+    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+    static Marker createRotateMarker(Context c, int resourceIdentifier,
+                               LatLong latLong,float degree) {
+        Drawable drawable = Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP ? c.getDrawable(resourceIdentifier) : c.getResources().getDrawable(resourceIdentifier);
+        Bitmap bitmap = AndroidGraphicFactory.convertToBitmap(drawable);
+        RotateMarker marker=new RotateMarker(latLong, bitmap, 0, 0);
+        marker.setDegree(degree);
+        return marker;
+        //return new Marker(latLong, bitmap, 0, -bitmap.getHeight() / 2);
+    }
+
     static Paint createPaint(int color, int strokeWidth, Style style) {
         Paint paint = AndroidGraphicFactory.INSTANCE.createPaint();
         paint.setColor(color);
